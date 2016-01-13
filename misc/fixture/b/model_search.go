@@ -5,11 +5,12 @@ package b
 import (
 	"bytes"
 	"errors"
+	"time"
+
 	"github.com/favclip/smg/smgutils"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/search"
-	"time"
 )
 
 // SampleSearch best match Search API wrapper for Sample.

@@ -6,12 +6,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/favclip/smg/smgutils"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/search"
-	"strconv"
-	"time"
 )
 
 // InventorySearch best match Search API wrapper for Inventory.
