@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// for Inventory
+// InventorySearch best match Search API wrapper for Inventory.
 type InventorySearch struct {
 	src *Inventory
 
@@ -31,10 +31,12 @@ type InventorySearch struct {
 	CreatedAt          time.Time
 }
 
+// Load by search.LoadStruct.
 func (s *InventorySearch) Load(fields []search.Field, metadata *search.DocumentMetadata) error {
 	return search.LoadStruct(s, fields)
 }
 
+// Save with search.DocumentMetadata#Rank.
 func (s *InventorySearch) Save() ([]search.Field, *search.DocumentMetadata, error) {
 	fields, err := search.SaveStruct(s)
 	if err != nil {
@@ -48,6 +50,7 @@ func (s *InventorySearch) Save() ([]search.Field, *search.DocumentMetadata, erro
 	return fields, metadata, nil
 }
 
+// Searchfy converts *Inventory to *InventorySearch.
 func (src *Inventory) Searchfy() (*InventorySearch, error) {
 	if src == nil {
 		return nil, nil
@@ -91,6 +94,7 @@ func (src *Inventory) Searchfy() (*InventorySearch, error) {
 	return dest, nil
 }
 
+// NewInventorySearch create new *InventorySearchBuilder.
 func NewInventorySearch() *InventorySearchBuilder {
 	op := &smgutils.Op{}
 	b := &InventorySearchBuilder{
@@ -109,6 +113,7 @@ func NewInventorySearch() *InventorySearchBuilder {
 	return b
 }
 
+// InventorySearchBuilder builds Search API query.
 type InventorySearchBuilder struct {
 	rootOp      *smgutils.Op
 	currentOp   *smgutils.Op // for grouping
@@ -125,16 +130,19 @@ type InventorySearchBuilder struct {
 	CreatedAt   *InventorySearchTimePropertyInfo
 }
 
+// And append new operant to query.
 func (b *InventorySearchBuilder) And() *InventorySearchBuilder {
 	b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.And})
 	return b
 }
 
+// Or append new operant to query.
 func (b *InventorySearchBuilder) Or() *InventorySearchBuilder {
 	b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.Or})
 	return b
 }
 
+// Group append new operant to query.
 func (b *InventorySearchBuilder) Group(p func()) *InventorySearchBuilder {
 	b.StartGroup()
 	p()
@@ -142,6 +150,7 @@ func (b *InventorySearchBuilder) Group(p func()) *InventorySearchBuilder {
 	return b
 }
 
+// StartGroup append new operant to query.
 func (b *InventorySearchBuilder) StartGroup() *InventorySearchBuilder {
 	op := &smgutils.Op{Type: smgutils.Group, Parent: b.currentOp}
 	b.currentOp.Children = append(b.currentOp.Children, op)
@@ -149,11 +158,13 @@ func (b *InventorySearchBuilder) StartGroup() *InventorySearchBuilder {
 	return b
 }
 
+// EndGroup append new operant to query.
 func (b *InventorySearchBuilder) EndGroup() *InventorySearchBuilder {
 	b.currentOp = b.currentOp.Parent
 	return b
 }
 
+// Put document to Index.
 func (b *InventorySearchBuilder) Put(c context.Context, src *Inventory) (string, error) {
 	doc, err := src.Searchfy()
 	if err != nil {
@@ -162,6 +173,7 @@ func (b *InventorySearchBuilder) Put(c context.Context, src *Inventory) (string,
 	return b.PutDocument(c, doc)
 }
 
+// PutDocument to Index.
 func (b *InventorySearchBuilder) PutDocument(c context.Context, src *InventorySearch) (string, error) {
 	index, err := search.Open("Inventory")
 	if err != nil {
@@ -189,6 +201,7 @@ func (b *InventorySearchBuilder) PutDocument(c context.Context, src *InventorySe
 	return docID, nil
 }
 
+// Delete document from Index.
 func (b *InventorySearchBuilder) Delete(c context.Context, src *Inventory) error {
 	doc, err := src.Searchfy()
 	if err != nil {
@@ -197,6 +210,7 @@ func (b *InventorySearchBuilder) Delete(c context.Context, src *Inventory) error
 	return b.DeleteDocument(c, doc)
 }
 
+// DeleteDocument from Index.
 func (b *InventorySearchBuilder) DeleteDocument(c context.Context, src *InventorySearch) error {
 	if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
 		docID, err := v.DocID(c)
@@ -209,6 +223,7 @@ func (b *InventorySearchBuilder) DeleteDocument(c context.Context, src *Inventor
 	return errors.New("src is not implemented DocIDer interface")
 }
 
+// DeleteByDocID from Index.
 func (b *InventorySearchBuilder) DeleteByDocID(c context.Context, docID string) error {
 	index, err := search.Open("Inventory")
 	if err != nil {
@@ -218,10 +233,12 @@ func (b *InventorySearchBuilder) DeleteByDocID(c context.Context, docID string) 
 	return index.Delete(c, docID)
 }
 
+// Opts returns *InventorySearchOptions.
 func (b *InventorySearchBuilder) Opts() *InventorySearchOptions {
 	return &InventorySearchOptions{b: b}
 }
 
+// Search returns *InventorySearchIterator, It is result from Index.
 func (b *InventorySearchBuilder) Search(c context.Context) (*InventorySearchIterator, error) {
 	index, err := search.Open("Inventory")
 	if err != nil {
@@ -241,10 +258,12 @@ func (b *InventorySearchBuilder) Search(c context.Context) (*InventorySearchIter
 	return &InventorySearchIterator{b, iter}, nil
 }
 
+// InventorySearchOptions construct *search.SearchOptions.
 type InventorySearchOptions struct {
 	b *InventorySearchBuilder
 }
 
+// Limit setup opts.
 func (b *InventorySearchOptions) Limit(value int) *InventorySearchOptions {
 	if b.b.opts == nil {
 		b.b.opts = &search.SearchOptions{}
@@ -253,6 +272,7 @@ func (b *InventorySearchOptions) Limit(value int) *InventorySearchOptions {
 	return b
 }
 
+// IDsOnly setup opts.
 func (b *InventorySearchOptions) IDsOnly() *InventorySearchOptions {
 	if b.b.opts == nil {
 		b.b.opts = &search.SearchOptions{}
@@ -261,11 +281,13 @@ func (b *InventorySearchOptions) IDsOnly() *InventorySearchOptions {
 	return b
 }
 
+// InventorySearchIterator can access to search result.
 type InventorySearchIterator struct {
 	b    *InventorySearchBuilder
 	iter *search.Iterator
 }
 
+// Next returns next document from iter.
 func (b *InventorySearchIterator) Next(c context.Context) (string, *InventorySearch, error) {
 	var s *InventorySearch
 	if b.b.opts == nil || b.b.opts.IDsOnly != true {
@@ -283,16 +305,19 @@ func (b *InventorySearchIterator) Next(c context.Context) (string, *InventorySea
 	return docID, s, err
 }
 
+// InventorySearchStringPropertyInfo hold property info.
 type InventorySearchStringPropertyInfo struct {
 	Name string
 	b    *InventorySearchBuilder
 }
 
+// Match add query operand.
 func (p *InventorySearchStringPropertyInfo) Match(value string) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Match, Value: value})
 	return p.b
 }
 
+// Asc add query operand.
 func (p *InventorySearchStringPropertyInfo) Asc() *InventorySearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -308,6 +333,7 @@ func (p *InventorySearchStringPropertyInfo) Asc() *InventorySearchBuilder {
 	return p.b
 }
 
+// Desc add query operand.
 func (p *InventorySearchStringPropertyInfo) Desc() *InventorySearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -323,70 +349,84 @@ func (p *InventorySearchStringPropertyInfo) Desc() *InventorySearchBuilder {
 	return p.b
 }
 
+// InventorySearchNgramStringPropertyInfo hold property info.
 type InventorySearchNgramStringPropertyInfo struct {
 	InventorySearchStringPropertyInfo
 }
 
+// NgramMatch add query operand.
 func (p *InventorySearchNgramStringPropertyInfo) NgramMatch(value string) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.NgramMatch, Value: value})
 	return p.b
 }
 
+// InventorySearchNumberPropertyInfo hold property info.
 type InventorySearchNumberPropertyInfo struct {
 	Name string
 	b    *InventorySearchBuilder
 }
 
+// IntGreaterThanOrEqual add query operand.
 func (p *InventorySearchNumberPropertyInfo) IntGreaterThanOrEqual(value int) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value})
 	return p.b
 }
 
+// IntGreaterThan add query operand.
 func (p *InventorySearchNumberPropertyInfo) IntGreaterThan(value int) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value})
 	return p.b
 }
 
+// IntLessThanOrEqual add query operand.
 func (p *InventorySearchNumberPropertyInfo) IntLessThanOrEqual(value int) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value})
 	return p.b
 }
 
+// IntLessThan add query operand.
 func (p *InventorySearchNumberPropertyInfo) IntLessThan(value int) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value})
 	return p.b
 }
 
+// IntEqual add query operand.
 func (p *InventorySearchNumberPropertyInfo) IntEqual(value int) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 	return p.b
 }
 
+// Int64GreaterThanOrEqual add query operand.
 func (p *InventorySearchNumberPropertyInfo) Int64GreaterThanOrEqual(value int64) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value})
 	return p.b
 }
 
+// Int64GreaterThan add query operand.
 func (p *InventorySearchNumberPropertyInfo) Int64GreaterThan(value int64) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value})
 	return p.b
 }
 
+// Int64LessThanOrEqual add query operand.
 func (p *InventorySearchNumberPropertyInfo) Int64LessThanOrEqual(value int64) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value})
 	return p.b
 }
 
+// Int64LessThan add query operand.
 func (p *InventorySearchNumberPropertyInfo) Int64LessThan(value int64) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value})
 	return p.b
 }
 
+// Int64Equal add query operand.
 func (p *InventorySearchNumberPropertyInfo) Int64Equal(value int64) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 	return p.b
 }
 
+// Asc add query operand.
 func (p *InventorySearchNumberPropertyInfo) Asc() *InventorySearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -402,6 +442,7 @@ func (p *InventorySearchNumberPropertyInfo) Asc() *InventorySearchBuilder {
 	return p.b
 }
 
+// Desc add query operand.
 func (p *InventorySearchNumberPropertyInfo) Desc() *InventorySearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -417,21 +458,25 @@ func (p *InventorySearchNumberPropertyInfo) Desc() *InventorySearchBuilder {
 	return p.b
 }
 
+// InventorySearchBoolPropertyInfo hold property info.
 type InventorySearchBoolPropertyInfo struct {
 	Name string
 	b    *InventorySearchBuilder
 }
 
+// Equal add query operand.
 func (p *InventorySearchNumberPropertyInfo) Equal(value bool) *InventorySearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 	return p.b
 }
 
+// InventorySearchTimePropertyInfo hold property info.
 type InventorySearchTimePropertyInfo struct {
 	Name string
 	b    *InventorySearchBuilder
 }
 
+// Asc add query operand.
 func (p *InventorySearchTimePropertyInfo) Asc() *InventorySearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -447,6 +492,7 @@ func (p *InventorySearchTimePropertyInfo) Asc() *InventorySearchBuilder {
 	return p.b
 }
 
+// Desc add query operand.
 func (p *InventorySearchTimePropertyInfo) Desc() *InventorySearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}

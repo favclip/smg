@@ -8,7 +8,7 @@ import (
 	"github.com/favclip/genbase"
 )
 
-// BuildStruct represents source code of assembling..
+// BuildSource represents source code of assembling..
 type BuildSource struct {
 	g         *genbase.Generator
 	pkg       *genbase.PackageInfo
@@ -47,6 +47,7 @@ type BuildTag struct {
 	String bool // e.g. Int64String int64 `search:",string"`
 }
 
+// Parse construct *BuildSource from package & type information.
 func Parse(pkg *genbase.PackageInfo, typeInfos genbase.TypeInfos) (*BuildSource, error) {
 	bu := &BuildSource{
 		g:         genbase.NewGenerator(pkg),
@@ -173,6 +174,7 @@ func (b *BuildSource) parseField(st *BuildStruct, typeInfo *genbase.TypeInfo, fi
 	return nil
 }
 
+// Emit generate wrapper code.
 func (b *BuildSource) Emit(args *[]string) ([]byte, error) {
 	b.g.PrintHeader("smg", args)
 
@@ -187,7 +189,7 @@ func (b *BuildSource) Emit(args *[]string) ([]byte, error) {
 }
 
 func (st *BuildStruct) emit(g *genbase.Generator) error {
-	g.Printf("// for %s\n", st.Name())
+	g.Printf("// %[1]sSearch best match Search API wrapper for %[1]s.\n", st.Name())
 
 	// generate FooJson struct from Foo struct
 	g.Printf("type %sSearch struct {\n", st.Name())
@@ -222,10 +224,12 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 	rank := st.Rank()
 	if rank != nil {
 		g.Printf(`
+				// Load by search.LoadStruct.
 				func (s *%[1]sSearch) Load(fields []search.Field, metadata *search.DocumentMetadata) error {
 					return search.LoadStruct(s, fields)
 				}
 
+				// Save with search.DocumentMetadata#Rank.
 				func (s *%[1]sSearch) Save() ([]search.Field, *search.DocumentMetadata, error) {
 					fields, err := search.SaveStruct(s)
 					if err != nil {
@@ -243,6 +247,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 	// implement Searchfy method
 	g.Printf(`
+			// Searchfy converts *%[1]s to *%[1]sSearch.
 			func (src *%[1]s) Searchfy() (*%[1]sSearch, error) {
 				if src == nil {
 					return nil, nil
@@ -322,6 +327,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 	// implement New*Search method
 	g.Printf(`
+			// New%[1]sSearch create new *%[1]sSearchBuilder.
 			func New%[1]sSearch() *%[1]sSearchBuilder {
 				op := &smgutils.Op{}
 				b := &%[1]sSearchBuilder{
@@ -353,6 +359,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 	// implement *SearchBuilder struct
 	g.Printf(`
+			// %[1]sSearchBuilder builds Search API query.
 			type %[1]sSearchBuilder struct {
 				rootOp      *smgutils.Op
 				currentOp   *smgutils.Op // for grouping
@@ -380,16 +387,19 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 	// implement SearchBuilder methods and others
 	g.Printf(`
+			// And append new operant to query.
 			func (b *%[1]sSearchBuilder) And() *%[1]sSearchBuilder {
 				b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.And})
 				return b
 			}
 
+			// Or append new operant to query.
 			func (b *%[1]sSearchBuilder) Or() *%[1]sSearchBuilder {
 				b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.Or})
 				return b
 			}
 
+			// Group append new operant to query.
 			func (b *%[1]sSearchBuilder) Group(p func()) *%[1]sSearchBuilder {
 				b.StartGroup()
 				p()
@@ -397,6 +407,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b
 			}
 
+			// StartGroup append new operant to query.
 			func (b *%[1]sSearchBuilder) StartGroup() *%[1]sSearchBuilder {
 				op := &smgutils.Op{Type: smgutils.Group, Parent: b.currentOp}
 				b.currentOp.Children = append(b.currentOp.Children, op)
@@ -404,11 +415,13 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b
 			}
 
+			// EndGroup append new operant to query.
 			func (b *%[1]sSearchBuilder) EndGroup() *%[1]sSearchBuilder {
 				b.currentOp = b.currentOp.Parent
 				return b
 			}
 
+			// Put document to Index.
 			func (b *%[1]sSearchBuilder) Put(c context.Context, src *%[1]s) (string, error) {
 				doc, err := src.Searchfy()
 				if err != nil {
@@ -417,6 +430,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b.PutDocument(c, doc)
 			}
 
+			// PutDocument to Index.
 			func (b *%[1]sSearchBuilder) PutDocument(c context.Context, src *%[1]sSearch) (string, error) {
 				index, err := search.Open("%[1]s")
 				if err != nil {
@@ -452,6 +466,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return docID, nil
 			}
 
+			// Delete document from Index.
 			func (b *%[1]sSearchBuilder) Delete(c context.Context, src *%[1]s) error {
 				doc, err := src.Searchfy()
 				if err != nil {
@@ -460,6 +475,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b.DeleteDocument(c, doc)
 			}
 
+			// DeleteDocument from Index.
 			func (b *%[1]sSearchBuilder) DeleteDocument(c context.Context, src *%[1]sSearch) error {
 				if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
 					docID, err := v.DocID(c)
@@ -472,6 +488,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return errors.New("src is not implemented DocIDer interface")
 			}
 
+			// DeleteByDocID from Index.
 			func (b *%[1]sSearchBuilder) DeleteByDocID(c context.Context, docID string) error {
 				index, err := search.Open("%[1]s")
 				if err != nil {
@@ -481,10 +498,12 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return index.Delete(c, docID)
 			}
 
+			// Opts returns *%[1]sSearchOptions.
 			func (b *%[1]sSearchBuilder) Opts() *%[1]sSearchOptions {
 				return &%[1]sSearchOptions{b: b}
 			}
 
+			// Search returns *%[1]sSearchIterator, It is result from Index.
 			func (b *%[1]sSearchBuilder) Search(c context.Context) (*%[1]sSearchIterator, error) {
 				index, err := search.Open("%[1]s")
 				if err != nil {
@@ -504,10 +523,12 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return &%[1]sSearchIterator{b, iter}, nil
 			}
 
+			// %[1]sSearchOptions construct *search.SearchOptions.
 			type %[1]sSearchOptions struct {
 				b *%[1]sSearchBuilder
 			}
 
+			// Limit setup opts.
 			func (b *%[1]sSearchOptions) Limit(value int) *%[1]sSearchOptions {
 				if b.b.opts == nil {
 					b.b.opts = &search.SearchOptions{}
@@ -516,6 +537,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b
 			}
 
+			// IDsOnly setup opts.
 			func (b *%[1]sSearchOptions) IDsOnly() *%[1]sSearchOptions {
 				if b.b.opts == nil {
 					b.b.opts = &search.SearchOptions{}
@@ -524,11 +546,12 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b
 			}
 
+			// %[1]sSearchIterator can access to search result.
 			type %[1]sSearchIterator struct {
 				b    *%[1]sSearchBuilder
 				iter *search.Iterator
 			}
-
+			// Next returns next document from iter.
 			func (b *%[1]sSearchIterator) Next(c context.Context) (string, *%[1]sSearch, error) {
 				var s *%[1]sSearch
 				if b.b.opts == nil || b.b.opts.IDsOnly != true {
@@ -549,16 +572,19 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return docID, s, err
 			}
 
+			// %[1]sSearchStringPropertyInfo hold property info.
 			type %[1]sSearchStringPropertyInfo struct {
 				Name string
 				b    *%[1]sSearchBuilder
 			}
 
+			// Match add query operand.
 			func (p *%[1]sSearchStringPropertyInfo) Match(value string) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Match, Value: value})
 				return p.b
 			}
 
+			// Asc add query operand.
 			func (p *%[1]sSearchStringPropertyInfo) Asc() *%[1]sSearchBuilder {
 				if p.b.opts == nil {
 					p.b.opts = &search.SearchOptions{}
@@ -574,6 +600,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return p.b
 			}
 
+			// Desc add query operand.
 			func (p *%[1]sSearchStringPropertyInfo) Desc() *%[1]sSearchBuilder {
 				if p.b.opts == nil {
 					p.b.opts = &search.SearchOptions{}
@@ -589,70 +616,84 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return p.b
 			}
 
+			// %[1]sSearchNgramStringPropertyInfo hold property info.
 			type %[1]sSearchNgramStringPropertyInfo struct {
 				%[1]sSearchStringPropertyInfo
 			}
 
+			// NgramMatch add query operand.
 			func (p *%[1]sSearchNgramStringPropertyInfo) NgramMatch(value string) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.NgramMatch, Value: value})
 				return p.b
 			}
 
+			// %[1]sSearchNumberPropertyInfo hold property info.
 			type %[1]sSearchNumberPropertyInfo struct {
 				Name string
 				b    *%[1]sSearchBuilder
 			}
 
+			// IntGreaterThanOrEqual add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) IntGreaterThanOrEqual(value int) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value})
 				return p.b
 			}
 
+			// IntGreaterThan add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) IntGreaterThan(value int) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value})
 				return p.b
 			}
 
+			// IntLessThanOrEqual add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) IntLessThanOrEqual(value int) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value})
 				return p.b
 			}
 
+			// IntLessThan add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) IntLessThan(value int) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value})
 				return p.b
 			}
 
+			// IntEqual add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) IntEqual(value int) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 				return p.b
 			}
 
+			// Int64GreaterThanOrEqual add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Int64GreaterThanOrEqual(value int64) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value})
 				return p.b
 			}
 
+			// Int64GreaterThan add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Int64GreaterThan(value int64) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value})
 				return p.b
 			}
 
+			// Int64LessThanOrEqual add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Int64LessThanOrEqual(value int64) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value})
 				return p.b
 			}
 
+			// Int64LessThan add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Int64LessThan(value int64) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value})
 				return p.b
 			}
 
+			// Int64Equal add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Int64Equal(value int64) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 				return p.b
 			}
 
+			// Asc add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Asc() *%[1]sSearchBuilder {
 				if p.b.opts == nil {
 					p.b.opts = &search.SearchOptions{}
@@ -668,6 +709,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return p.b
 			}
 
+			// Desc add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Desc() *%[1]sSearchBuilder {
 				if p.b.opts == nil {
 					p.b.opts = &search.SearchOptions{}
@@ -683,21 +725,25 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return p.b
 			}
 
+			// %[1]sSearchBoolPropertyInfo hold property info.
 			type %[1]sSearchBoolPropertyInfo struct {
 				Name string
 				b    *%[1]sSearchBuilder
 			}
 
+			// Equal add query operand.
 			func (p *%[1]sSearchNumberPropertyInfo) Equal(value bool) *%[1]sSearchBuilder {
 				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 				return p.b
 			}
 
+			// %[1]sSearchTimePropertyInfo hold property info.
 			type %[1]sSearchTimePropertyInfo struct {
 				Name string
 				b    *%[1]sSearchBuilder
 			}
 
+			// Asc add query operand.
 			func (p *%[1]sSearchTimePropertyInfo) Asc() *%[1]sSearchBuilder {
 				if p.b.opts == nil {
 					p.b.opts = &search.SearchOptions{}
@@ -713,6 +759,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return p.b
 			}
 
+			// Desc add query operand.
 			func (p *%[1]sSearchTimePropertyInfo) Desc() *%[1]sSearchBuilder {
 				if p.b.opts == nil {
 					p.b.opts = &search.SearchOptions{}
@@ -734,10 +781,12 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 	return nil
 }
 
+// Name returns struct type name.
 func (st *BuildStruct) Name() string {
 	return st.typeInfo.Name()
 }
 
+// Rank returns field with rank annotation.
 func (st *BuildStruct) Rank() *BuildField {
 	for _, field := range st.Fields {
 		if field.Tag.Rank {
@@ -747,6 +796,7 @@ func (st *BuildStruct) Rank() *BuildField {
 	return nil
 }
 
+// ID returns field with id annotation.
 func (st *BuildStruct) ID() *BuildField {
 	for _, field := range st.Fields {
 		if field.Tag.ID {
@@ -756,6 +806,7 @@ func (st *BuildStruct) ID() *BuildField {
 	return nil
 }
 
+// HasJSON returns struct has json annotated field.
 func (st *BuildStruct) HasJSON() bool {
 	for _, field := range st.Fields {
 		if field.Tag.JSON {
@@ -765,6 +816,7 @@ func (st *BuildStruct) HasJSON() bool {
 	return false
 }
 
+// HasID returns struct has id annotated field.
 func (st *BuildStruct) HasID() bool {
 	for _, field := range st.Fields {
 		if field.Tag.ID {
@@ -774,6 +826,7 @@ func (st *BuildStruct) HasID() bool {
 	return false
 }
 
+// HasNgram returns struct has ngram annotated field.
 func (st *BuildStruct) HasNgram() bool {
 	for _, field := range st.Fields {
 		if field.Tag.Ngram {
@@ -783,6 +836,7 @@ func (st *BuildStruct) HasNgram() bool {
 	return false
 }
 
+// HasString returns struct has string annotated field.
 func (st *BuildStruct) HasString() bool {
 	for _, field := range st.Fields {
 		if field.Tag.String {

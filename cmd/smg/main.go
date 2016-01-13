@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/favclip/smg"
 	"github.com/favclip/genbase"
+	"github.com/favclip/smg"
+	_ "golang.org/x/tools/go/gcimporter"
 )
 
 var (
