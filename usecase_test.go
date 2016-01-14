@@ -167,22 +167,22 @@ type InventorySearch struct {
 	CreatedAt          time.Time
 }
 
-func (s *InventorySearch) Load(fields []search.Field, metadata *search.DocumentMetadata) error {
-	return search.LoadStruct(s, fields)
+func (doc *InventorySearch) Load(fields []search.Field, metadata *search.DocumentMetadata) error {
+	return search.LoadStruct(doc, fields)
 }
 
-func (s *InventorySearch) Save() ([]search.Field, *search.DocumentMetadata, error) {
-	fields, err := search.SaveStruct(s)
+func (doc *InventorySearch) Save() ([]search.Field, *search.DocumentMetadata, error) {
+	fields, err := search.SaveStruct(doc)
 	if err != nil {
 		return nil, nil, err
 	}
-	metadata := &search.DocumentMetadata{Rank: int(s.Stock)}
+	metadata := &search.DocumentMetadata{Rank: int(doc.Stock)}
 
 	return fields, metadata, nil
 }
 
-func (src *Inventory) Searchfy() (*InventorySearch, error) {
-	if src == nil {
+func (doc *Inventory) Searchfy() (*InventorySearch, error) {
+	if doc == nil {
 		return nil, nil
 	}
 	dest := &InventorySearch{}
@@ -190,18 +190,18 @@ func (src *Inventory) Searchfy() (*InventorySearch, error) {
 	var err error
 	var b []byte
 
-	dest.ID = strconv.FormatInt(src.ID, 10)
-	dest.ProductName = src.ProductName
-	dest.Description = src.Description
-	dest.DescriptionUnigram, err = smgutils.UnigramForSearch(src.Description)
+	dest.ID = strconv.FormatInt(doc.ID, 10)
+	dest.ProductName = doc.ProductName
+	dest.Description = doc.Description
+	dest.DescriptionUnigram, err = smgutils.UnigramForSearch(doc.Description)
 	if err != nil {
 		return nil, err
 	}
-	dest.DescriptionBigram, err = smgutils.BigramForSearch(src.Description)
+	dest.DescriptionBigram, err = smgutils.BigramForSearch(doc.Description)
 	if err != nil {
 		return nil, err
 	}
-	dest.Stock = float64(src.Stock)
+	dest.Stock = float64(doc.Stock)
 	b, err = json.Marshal(dest.AdminNames)
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (src *Inventory) Searchfy() (*InventorySearch, error) {
 	if str := string(b); str != "" && str != `""` {
 		dest.Shops = str
 	}
-	dest.CreatedAt = src.CreatedAt
+	dest.CreatedAt = doc.CreatedAt
 
 	return dest, nil
 }

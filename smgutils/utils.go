@@ -10,22 +10,35 @@ import (
 	"golang.org/x/net/context"
 )
 
+// OpType is operand type of Search API.
 type OpType int
 
 const (
+	// Unknown is default value of OpType.
 	Unknown OpType = iota
+	// Match is OpType value. it match to specified string.
 	Match
+	// NgramMatch is OpType value. it match to ngram string.
 	NgramMatch
+	// And generate AND query.
 	And
+	// Or generate OR query.
 	Or
+	// Gt generate > query.
 	Gt
+	// GtEq generate >= query.
 	GtEq
+	// Lt generate < query.
 	Lt
+	// LtEq generate <= query.
 	LtEq
+	// Eq generate = query.
 	Eq
+	// Group generate ( ... ) query.
 	Group
 )
 
+// Op  is query operand.
 type Op struct {
 	FieldName string
 	Type      OpType
@@ -34,6 +47,7 @@ type Op struct {
 	Children  []*Op
 }
 
+// Query builds query string.
 func (op *Op) Query(buffer *bytes.Buffer) error {
 	var err error
 	switch op.Type {
@@ -134,10 +148,12 @@ func (op *Op) Query(buffer *bytes.Buffer) error {
 	return nil
 }
 
+// DocIDer supply DocID method. It can customize docID of Document.
 type DocIDer interface {
 	DocID(c context.Context) (string, error)
 }
 
+// Unigram returns unigram string.
 func Unigram(str string) []string {
 	result := make([]string, 0, len(str))
 	for _, r := range str {
@@ -147,6 +163,7 @@ func Unigram(str string) []string {
 	return result
 }
 
+// Bigram returns bigram string.
 func Bigram(str string) []string {
 	result := make([]string, 0, len(str))
 	var prev rune
@@ -160,6 +177,7 @@ func Bigram(str string) []string {
 	return result
 }
 
+// UnigramForSearch returns unigram string for Document field.
 func UnigramForSearch(str string) (string, error) {
 	result := make([]string, 0, len(str))
 	for _, r := range str {
@@ -174,6 +192,7 @@ func UnigramForSearch(str string) (string, error) {
 	return string(uni), nil
 }
 
+// BigramForSearch returns bigram string for Document field.
 func BigramForSearch(str string) (string, error) {
 	result := make([]string, 0, len(str))
 	var prev rune
@@ -192,6 +211,7 @@ func BigramForSearch(str string) (string, error) {
 	return string(bi), nil
 }
 
+// StringPropQuery returns ngram match query string.
 func StringPropQuery(propName string, value string) string {
 	if l := utf8.RuneCountInString(value); l == 0 {
 		return ""
@@ -208,6 +228,7 @@ func StringPropQuery(propName string, value string) string {
 	return "(" + strings.Join(scattered, " AND ") + ")"
 }
 
+// Sanitize about Search API query.
 func Sanitize(value string) string {
 	value = strings.Replace(value, `\`, `\\`, -1)
 	value = strings.Replace(value, `"`, `\"`, -1)

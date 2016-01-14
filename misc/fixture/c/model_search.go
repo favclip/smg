@@ -6,13 +6,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+
 	"github.com/favclip/smg/smgutils"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/search"
 )
 
-// for Sample
+// SampleSearch best match Search API wrapper for Sample.
 type SampleSearch struct {
 	src *Sample
 
@@ -20,6 +21,7 @@ type SampleSearch struct {
 	B string
 }
 
+// Searchfy converts *Sample to *SampleSearch.
 func (src *Sample) Searchfy() (*SampleSearch, error) {
 	if src == nil {
 		return nil, nil
@@ -40,6 +42,7 @@ func (src *Sample) Searchfy() (*SampleSearch, error) {
 	return dest, nil
 }
 
+// NewSampleSearch create new *SampleSearchBuilder.
 func NewSampleSearch() *SampleSearchBuilder {
 	op := &smgutils.Op{}
 	b := &SampleSearchBuilder{
@@ -52,6 +55,7 @@ func NewSampleSearch() *SampleSearchBuilder {
 	return b
 }
 
+// SampleSearchBuilder builds Search API query.
 type SampleSearchBuilder struct {
 	rootOp    *smgutils.Op
 	currentOp *smgutils.Op // for grouping
@@ -62,16 +66,19 @@ type SampleSearchBuilder struct {
 	B         *SampleSearchStringPropertyInfo
 }
 
+// And append new operant to query.
 func (b *SampleSearchBuilder) And() *SampleSearchBuilder {
 	b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.And})
 	return b
 }
 
+// Or append new operant to query.
 func (b *SampleSearchBuilder) Or() *SampleSearchBuilder {
 	b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.Or})
 	return b
 }
 
+// Group append new operant to query.
 func (b *SampleSearchBuilder) Group(p func()) *SampleSearchBuilder {
 	b.StartGroup()
 	p()
@@ -79,6 +86,7 @@ func (b *SampleSearchBuilder) Group(p func()) *SampleSearchBuilder {
 	return b
 }
 
+// StartGroup append new operant to query.
 func (b *SampleSearchBuilder) StartGroup() *SampleSearchBuilder {
 	op := &smgutils.Op{Type: smgutils.Group, Parent: b.currentOp}
 	b.currentOp.Children = append(b.currentOp.Children, op)
@@ -86,11 +94,13 @@ func (b *SampleSearchBuilder) StartGroup() *SampleSearchBuilder {
 	return b
 }
 
+// EndGroup append new operant to query.
 func (b *SampleSearchBuilder) EndGroup() *SampleSearchBuilder {
 	b.currentOp = b.currentOp.Parent
 	return b
 }
 
+// Put document to Index.
 func (b *SampleSearchBuilder) Put(c context.Context, src *Sample) (string, error) {
 	doc, err := src.Searchfy()
 	if err != nil {
@@ -99,6 +109,7 @@ func (b *SampleSearchBuilder) Put(c context.Context, src *Sample) (string, error
 	return b.PutDocument(c, doc)
 }
 
+// PutDocument to Index.
 func (b *SampleSearchBuilder) PutDocument(c context.Context, src *SampleSearch) (string, error) {
 	index, err := search.Open("Sample")
 	if err != nil {
@@ -124,6 +135,7 @@ func (b *SampleSearchBuilder) PutDocument(c context.Context, src *SampleSearch) 
 	return docID, nil
 }
 
+// Delete document from Index.
 func (b *SampleSearchBuilder) Delete(c context.Context, src *Sample) error {
 	doc, err := src.Searchfy()
 	if err != nil {
@@ -132,6 +144,7 @@ func (b *SampleSearchBuilder) Delete(c context.Context, src *Sample) error {
 	return b.DeleteDocument(c, doc)
 }
 
+// DeleteDocument from Index.
 func (b *SampleSearchBuilder) DeleteDocument(c context.Context, src *SampleSearch) error {
 	if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
 		docID, err := v.DocID(c)
@@ -144,6 +157,7 @@ func (b *SampleSearchBuilder) DeleteDocument(c context.Context, src *SampleSearc
 	return errors.New("src is not implemented DocIDer interface")
 }
 
+// DeleteByDocID from Index.
 func (b *SampleSearchBuilder) DeleteByDocID(c context.Context, docID string) error {
 	index, err := search.Open("Sample")
 	if err != nil {
@@ -153,10 +167,12 @@ func (b *SampleSearchBuilder) DeleteByDocID(c context.Context, docID string) err
 	return index.Delete(c, docID)
 }
 
+// Opts returns *SampleSearchOptions.
 func (b *SampleSearchBuilder) Opts() *SampleSearchOptions {
 	return &SampleSearchOptions{b: b}
 }
 
+// Search returns *SampleSearchIterator, It is result from Index.
 func (b *SampleSearchBuilder) Search(c context.Context) (*SampleSearchIterator, error) {
 	index, err := search.Open("Sample")
 	if err != nil {
@@ -176,10 +192,12 @@ func (b *SampleSearchBuilder) Search(c context.Context) (*SampleSearchIterator, 
 	return &SampleSearchIterator{b, iter}, nil
 }
 
+// SampleSearchOptions construct *search.SearchOptions.
 type SampleSearchOptions struct {
 	b *SampleSearchBuilder
 }
 
+// Limit setup opts.
 func (b *SampleSearchOptions) Limit(value int) *SampleSearchOptions {
 	if b.b.opts == nil {
 		b.b.opts = &search.SearchOptions{}
@@ -188,6 +206,7 @@ func (b *SampleSearchOptions) Limit(value int) *SampleSearchOptions {
 	return b
 }
 
+// IDsOnly setup opts.
 func (b *SampleSearchOptions) IDsOnly() *SampleSearchOptions {
 	if b.b.opts == nil {
 		b.b.opts = &search.SearchOptions{}
@@ -196,11 +215,13 @@ func (b *SampleSearchOptions) IDsOnly() *SampleSearchOptions {
 	return b
 }
 
+// SampleSearchIterator can access to search result.
 type SampleSearchIterator struct {
 	b    *SampleSearchBuilder
 	iter *search.Iterator
 }
 
+// Next returns next document from iter.
 func (b *SampleSearchIterator) Next(c context.Context) (string, *SampleSearch, error) {
 	var s *SampleSearch
 	if b.b.opts == nil || b.b.opts.IDsOnly != true {
@@ -215,16 +236,19 @@ func (b *SampleSearchIterator) Next(c context.Context) (string, *SampleSearch, e
 	return docID, s, err
 }
 
+// SampleSearchStringPropertyInfo hold property info.
 type SampleSearchStringPropertyInfo struct {
 	Name string
 	b    *SampleSearchBuilder
 }
 
+// Match add query operand.
 func (p *SampleSearchStringPropertyInfo) Match(value string) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Match, Value: value})
 	return p.b
 }
 
+// Asc add query operand.
 func (p *SampleSearchStringPropertyInfo) Asc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -240,6 +264,7 @@ func (p *SampleSearchStringPropertyInfo) Asc() *SampleSearchBuilder {
 	return p.b
 }
 
+// Desc add query operand.
 func (p *SampleSearchStringPropertyInfo) Desc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -255,70 +280,84 @@ func (p *SampleSearchStringPropertyInfo) Desc() *SampleSearchBuilder {
 	return p.b
 }
 
+// SampleSearchNgramStringPropertyInfo hold property info.
 type SampleSearchNgramStringPropertyInfo struct {
 	SampleSearchStringPropertyInfo
 }
 
+// NgramMatch add query operand.
 func (p *SampleSearchNgramStringPropertyInfo) NgramMatch(value string) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.NgramMatch, Value: value})
 	return p.b
 }
 
+// SampleSearchNumberPropertyInfo hold property info.
 type SampleSearchNumberPropertyInfo struct {
 	Name string
 	b    *SampleSearchBuilder
 }
 
+// IntGreaterThanOrEqual add query operand.
 func (p *SampleSearchNumberPropertyInfo) IntGreaterThanOrEqual(value int) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value})
 	return p.b
 }
 
+// IntGreaterThan add query operand.
 func (p *SampleSearchNumberPropertyInfo) IntGreaterThan(value int) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value})
 	return p.b
 }
 
+// IntLessThanOrEqual add query operand.
 func (p *SampleSearchNumberPropertyInfo) IntLessThanOrEqual(value int) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value})
 	return p.b
 }
 
+// IntLessThan add query operand.
 func (p *SampleSearchNumberPropertyInfo) IntLessThan(value int) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value})
 	return p.b
 }
 
+// IntEqual add query operand.
 func (p *SampleSearchNumberPropertyInfo) IntEqual(value int) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 	return p.b
 }
 
+// Int64GreaterThanOrEqual add query operand.
 func (p *SampleSearchNumberPropertyInfo) Int64GreaterThanOrEqual(value int64) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value})
 	return p.b
 }
 
+// Int64GreaterThan add query operand.
 func (p *SampleSearchNumberPropertyInfo) Int64GreaterThan(value int64) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value})
 	return p.b
 }
 
+// Int64LessThanOrEqual add query operand.
 func (p *SampleSearchNumberPropertyInfo) Int64LessThanOrEqual(value int64) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value})
 	return p.b
 }
 
+// Int64LessThan add query operand.
 func (p *SampleSearchNumberPropertyInfo) Int64LessThan(value int64) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value})
 	return p.b
 }
 
+// Int64Equal add query operand.
 func (p *SampleSearchNumberPropertyInfo) Int64Equal(value int64) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 	return p.b
 }
 
+// Asc add query operand.
 func (p *SampleSearchNumberPropertyInfo) Asc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -334,6 +373,7 @@ func (p *SampleSearchNumberPropertyInfo) Asc() *SampleSearchBuilder {
 	return p.b
 }
 
+// Desc add query operand.
 func (p *SampleSearchNumberPropertyInfo) Desc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -349,21 +389,25 @@ func (p *SampleSearchNumberPropertyInfo) Desc() *SampleSearchBuilder {
 	return p.b
 }
 
+// SampleSearchBoolPropertyInfo hold property info.
 type SampleSearchBoolPropertyInfo struct {
 	Name string
 	b    *SampleSearchBuilder
 }
 
+// Equal add query operand.
 func (p *SampleSearchNumberPropertyInfo) Equal(value bool) *SampleSearchBuilder {
 	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value})
 	return p.b
 }
 
+// SampleSearchTimePropertyInfo hold property info.
 type SampleSearchTimePropertyInfo struct {
 	Name string
 	b    *SampleSearchBuilder
 }
 
+// Asc add query operand.
 func (p *SampleSearchTimePropertyInfo) Asc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
@@ -379,6 +423,7 @@ func (p *SampleSearchTimePropertyInfo) Asc() *SampleSearchBuilder {
 	return p.b
 }
 
+// Desc add query operand.
 func (p *SampleSearchTimePropertyInfo) Desc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}

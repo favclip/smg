@@ -117,7 +117,7 @@ func TestUnigram(t *testing.T) {
 	ss := Unigram("test")
 
 	if v := len(ss); v != 4 {
-		t.Fatalf("unexpected: %n", v)
+		t.Fatalf("unexpected: %d", v)
 	}
 
 	if ss[0] != "t" || ss[1] != "e" || ss[2] != "s" || ss[3] != "t" {
@@ -129,7 +129,7 @@ func TestBigram(t *testing.T) {
 	ss := Bigram("test")
 
 	if v := len(ss); v != 3 {
-		t.Fatalf("unexpected: %n", v)
+		t.Fatalf("unexpected: %d", v)
 	}
 
 	if ss[0] != "te" || ss[1] != "es" || ss[2] != "st" {
