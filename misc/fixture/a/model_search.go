@@ -5,11 +5,11 @@ package a
 import (
 	"bytes"
 	"errors"
-
 	"github.com/favclip/smg/smgutils"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/search"
+	"time"
 )
 
 // SampleSearch best match Search API wrapper for Sample.
@@ -408,6 +408,40 @@ func (p *SampleSearchNumberPropertyInfo) Equal(value bool) *SampleSearchBuilder 
 type SampleSearchTimePropertyInfo struct {
 	Name string
 	b    *SampleSearchBuilder
+}
+
+// query spec for time.Time.
+// https://cloud.google.com/appengine/docs/go/search/query_strings#Go_Queries_on_date_fields
+// It using date, not datetime.
+
+// GreaterThanOrEqual add query operand.
+func (p *SampleSearchTimePropertyInfo) GreaterThanOrEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value.UTC().Format("2006-01-02")})
+	return p.b
+}
+
+// GreaterThan add query operand.
+func (p *SampleSearchTimePropertyInfo) GreaterThan(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value.UTC().Format("2006-01-02")})
+	return p.b
+}
+
+// LessThanOrEqual add query operand.
+func (p *SampleSearchTimePropertyInfo) LessThanOrEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value.UTC().Format("2006-01-02")})
+	return p.b
+}
+
+// LessThan add query operand.
+func (p *SampleSearchTimePropertyInfo) LessThan(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value.UTC().Format("2006-01-02")})
+	return p.b
+}
+
+// Equal add query operand.
+func (p *SampleSearchTimePropertyInfo) Equal(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value.UTC().Format("2006-01-02")})
+	return p.b
 }
 
 // Asc add query operand.
