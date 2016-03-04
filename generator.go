@@ -546,6 +546,18 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b
 			}
 
+			// Cursor setup opts.
+			func (b *%[1]sSearchOptions) Cursor(cursor search.Cursor) *%[1]sSearchOptions {
+				b.b.opts.Cursor = cursor
+				return b
+			}
+
+			// Offset setup opts.
+			func (b *%[1]sSearchOptions) Offset(value int) *%[1]sSearchOptions {
+				b.b.opts.Offset = value
+				return b
+			}
+
 			// %[1]sSearchIterator can access to search result.
 			type %[1]sSearchIterator struct {
 				b    *%[1]sSearchBuilder
@@ -570,6 +582,11 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 	}
 	g.Printf(`
 				return docID, s, err
+			}
+
+			// Cursor returns cursor of search.
+			func (b *%[1]sSearchIterator) Cursor() search.Cursor {
+				return b.iter.Cursor()
 			}
 
 			// %[1]sSearchStringPropertyInfo hold property info.

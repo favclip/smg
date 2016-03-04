@@ -3,7 +3,7 @@ machine:
     Asia/Tokyo
 dependencies:
   pre:
-    - curl -o $HOME/go_appengine_sdk_linux_amd64.zip https://storage.googleapis.com/appengine-sdks/featured/go_appengine_sdk_linux_amd64-1.9.25.zip
+    - curl -o $HOME/go_appengine_sdk_linux_amd64.zip https://storage.googleapis.com/appengine-sdks/featured/go_appengine_sdk_linux_amd64-1.9.33.zip
     - unzip -q -d $HOME $HOME/go_appengine_sdk_linux_amd64.zip
   override:
     - $HOME/go_appengine/goapp get -t -d -v ./...

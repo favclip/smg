@@ -230,6 +230,18 @@ func (b *SampleSearchOptions) IDsOnly() *SampleSearchOptions {
 	return b
 }
 
+// Cursor setup opts.
+func (b *SampleSearchOptions) Cursor(cursor search.Cursor) *SampleSearchOptions {
+	b.b.opts.Cursor = cursor
+	return b
+}
+
+// Offset setup opts.
+func (b *SampleSearchOptions) Offset(value int) *SampleSearchOptions {
+	b.b.opts.Offset = value
+	return b
+}
+
 // SampleSearchIterator can access to search result.
 type SampleSearchIterator struct {
 	b    *SampleSearchBuilder
@@ -249,6 +261,11 @@ func (b *SampleSearchIterator) Next(c context.Context) (string, *SampleSearch, e
 	}
 
 	return docID, s, err
+}
+
+// Cursor returns cursor of search.
+func (b *SampleSearchIterator) Cursor() search.Cursor {
+	return b.iter.Cursor()
 }
 
 // SampleSearchStringPropertyInfo hold property info.
