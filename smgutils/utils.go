@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"golang.org/x/net/context"
@@ -113,6 +114,11 @@ func (op *Op) Query(buffer *bytes.Buffer) error {
 				num = 1
 			}
 			_, err = buffer.WriteString(fmt.Sprintf(` %s %s %d `, op.FieldName, expr, num))
+			if err != nil {
+				return err
+			}
+		} else if t, ok := op.Value.(time.Time); ok {
+			_, err = buffer.WriteString(fmt.Sprintf(` %s %s %s `, op.FieldName, expr, t.UTC().Format("2006-01-02")))
 			if err != nil {
 				return err
 			}

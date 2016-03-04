@@ -416,31 +416,31 @@ type SampleSearchTimePropertyInfo struct {
 
 // GreaterThanOrEqual add query operand.
 func (p *SampleSearchTimePropertyInfo) GreaterThanOrEqual(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value.UTC().Format("2006-01-02")})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value.UTC()})
 	return p.b
 }
 
 // GreaterThan add query operand.
 func (p *SampleSearchTimePropertyInfo) GreaterThan(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value.UTC().Format("2006-01-02")})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value.UTC()})
 	return p.b
 }
 
 // LessThanOrEqual add query operand.
 func (p *SampleSearchTimePropertyInfo) LessThanOrEqual(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value.UTC().Format("2006-01-02")})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value.UTC()})
 	return p.b
 }
 
 // LessThan add query operand.
 func (p *SampleSearchTimePropertyInfo) LessThan(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value.UTC().Format("2006-01-02")})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value.UTC()})
 	return p.b
 }
 
 // Equal add query operand.
 func (p *SampleSearchTimePropertyInfo) Equal(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value.UTC().Format("2006-01-02")})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value.UTC()})
 	return p.b
 }
 

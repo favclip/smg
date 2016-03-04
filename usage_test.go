@@ -2,6 +2,7 @@ package smg
 
 import (
 	"testing"
+	"time"
 
 	"github.com/favclip/smg/misc/fixture/a"
 	"github.com/favclip/smg/misc/fixture/e"
@@ -144,6 +145,7 @@ func TestBasicUsage4(t *testing.T) {
 		Description: "Hi, go-chan!",
 		Stock:       3,
 		Price:       1050,
+		CreatedAt:   time.Now(),
 	}
 
 	index := e.NewInventorySearch()
@@ -156,6 +158,7 @@ func TestBasicUsage4(t *testing.T) {
 		index.ProductName.Match("go-chan").Or().Description.NgramMatch("go-chan")
 	}).Or()
 	index.Stock.IntLessThan(5)
+	index.CreatedAt.GreaterThanOrEqual(time.Now().AddDate(0, 0, -1))
 
 	iter, err := index.Search(c)
 	if err != nil {
