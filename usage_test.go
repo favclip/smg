@@ -152,9 +152,6 @@ func TestBasicUsage4(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	index.Opts().Limit(1)
-	index.Opts().Offset(1)
-	index.Opts().Cursor(search.Cursor("test"))
 	index.Group(func() {
 		index.ProductName.Match("go-chan").Or().Description.NgramMatch("go-chan")
 	}).Or()

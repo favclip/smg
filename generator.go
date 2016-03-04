@@ -61,6 +61,7 @@ func Parse(pkg *genbase.PackageInfo, typeInfos genbase.TypeInfos) (*BuildSource,
 	bu.g.AddImport("bytes", "")
 	bu.g.AddImport("github.com/favclip/smg/smgutils", "")
 	bu.g.AddImport("errors", "")
+	bu.g.AddImport("time", "")
 
 	for _, typeInfo := range typeInfos {
 		err := bu.parseStruct(typeInfo)
@@ -758,6 +759,40 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 			type %[1]sSearchTimePropertyInfo struct {
 				Name string
 				b    *%[1]sSearchBuilder
+			}
+
+			// query spec for time.Time.
+			// https://cloud.google.com/appengine/docs/go/search/query_strings#Go_Queries_on_date_fields
+			// It using date, not datetime.
+
+			// GreaterThanOrEqual add query operand.
+			func (p *%[1]sSearchTimePropertyInfo) GreaterThanOrEqual(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value.UTC().Format("2006-01-02")})
+				return p.b
+			}
+
+			// GreaterThan add query operand.
+			func (p *%[1]sSearchTimePropertyInfo) GreaterThan(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value.UTC().Format("2006-01-02")})
+				return p.b
+			}
+
+			// LessThanOrEqual add query operand.
+			func (p *%[1]sSearchTimePropertyInfo) LessThanOrEqual(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value.UTC().Format("2006-01-02")})
+				return p.b
+			}
+
+			// LessThan add query operand.
+			func (p *%[1]sSearchTimePropertyInfo) LessThan(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value.UTC().Format("2006-01-02")})
+				return p.b
+			}
+
+			// Equal add query operand.
+			func (p *%[1]sSearchTimePropertyInfo) Equal(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value.UTC().Format("2006-01-02")})
+				return p.b
 			}
 
 			// Asc add query operand.
