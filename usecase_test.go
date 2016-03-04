@@ -354,6 +354,16 @@ func (b *InventorySearchOptions) IDsOnly() *InventorySearchOptions {
 	return b
 }
 
+func (b *InventorySearchOptions) Cursor(cursor search.Cursor) *InventorySearchOptions {
+	b.b.opts.Cursor = cursor
+	return b
+}
+
+func (b *InventorySearchOptions) Offset(value int) *InventorySearchOptions {
+	b.b.opts.Offset = value
+	return b
+}
+
 type InventorySearchIterator struct {
 	b    *InventorySearchBuilder
 	iter *search.Iterator
@@ -373,6 +383,10 @@ func (b *InventorySearchIterator) Next(c context.Context) (string, *InventorySea
 		s.ID = docID
 	}
 	return docID, s, err
+}
+
+func (b *InventorySearchIterator) Cursor() search.Cursor {
+	return b.iter.Cursor()
 }
 
 type InventorySearchStringPropertyInfo struct {
