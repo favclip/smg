@@ -479,3 +479,71 @@ func (p *SampleSearchTimePropertyInfo) Desc() *SampleSearchBuilder {
 
 	return p.b
 }
+
+// SampleSearchUnixTimePropertyInfo hold property info.
+type SampleSearchUnixTimePropertyInfo struct {
+	Name string
+	b    *SampleSearchBuilder
+}
+
+// GreaterThanOrEqual add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) GreaterThanOrEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.GtEq, Value: value.Unix()})
+	return p.b
+}
+
+// GreaterThan add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) GreaterThan(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Gt, Value: value.Unix()})
+	return p.b
+}
+
+// LessThanOrEqual add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) LessThanOrEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.LtEq, Value: value.Unix()})
+	return p.b
+}
+
+// LessThan add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) LessThan(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Lt, Value: value.Unix()})
+	return p.b
+}
+
+// Equal add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) Equal(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Eq, Value: value.Unix()})
+	return p.b
+}
+
+// Asc add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) Asc() *SampleSearchBuilder {
+	if p.b.opts == nil {
+		p.b.opts = &search.SearchOptions{}
+	}
+	if p.b.opts.Sort == nil {
+		p.b.opts.Sort = &search.SortOptions{}
+	}
+	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+		Expr:    p.Name + "UnixTime",
+		Reverse: true,
+	})
+
+	return p.b
+}
+
+// Desc add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) Desc() *SampleSearchBuilder {
+	if p.b.opts == nil {
+		p.b.opts = &search.SearchOptions{}
+	}
+	if p.b.opts.Sort == nil {
+		p.b.opts.Sort = &search.SortOptions{}
+	}
+	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+		Expr:    p.Name + "UnixTime",
+		Reverse: false,
+	})
+
+	return p.b
+}

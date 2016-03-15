@@ -29,6 +29,8 @@ type InventorySearch struct {
 	AdminNames         string
 	Shops              string
 	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	UpdatedAtUnixTime  float64
 }
 
 // Load by search.LoadStruct.
@@ -91,6 +93,15 @@ func (src *Inventory) Searchfy() (*InventorySearch, error) {
 		dest.Shops = str
 	}
 	dest.CreatedAt = src.CreatedAt
+
+	// Number Field is value between -2,147,483,647 and 2,147,483,647.
+	// but, value of zero time is -62,135,596,800.
+	if src.UpdatedAt.IsZero() {
+		dest.UpdatedAtUnixTime = float64(-1)
+	} else {
+		dest.UpdatedAtUnixTime = float64(src.UpdatedAt.Unix())
+	}
+	dest.UpdatedAt = src.UpdatedAt
 	return dest, nil
 }
 
@@ -109,6 +120,7 @@ func NewInventorySearch() *InventorySearchBuilder {
 	b.AdminNames = &InventorySearchStringPropertyInfo{"AdminNames", b}
 	b.Shops = &InventorySearchStringPropertyInfo{"Shops", b}
 	b.CreatedAt = &InventorySearchTimePropertyInfo{"CreatedAt", b}
+	b.UpdatedAt = &InventorySearchUnixTimePropertyInfo{"UpdatedAt", b}
 
 	return b
 }
@@ -128,6 +140,7 @@ type InventorySearchBuilder struct {
 	AdminNames  *InventorySearchStringPropertyInfo
 	Shops       *InventorySearchStringPropertyInfo
 	CreatedAt   *InventorySearchTimePropertyInfo
+	UpdatedAt   *InventorySearchUnixTimePropertyInfo
 }
 
 // And append new operant to query.
@@ -553,6 +566,74 @@ func (p *InventorySearchTimePropertyInfo) Desc() *InventorySearchBuilder {
 	}
 	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
 		Expr:    p.Name,
+		Reverse: false,
+	})
+
+	return p.b
+}
+
+// InventorySearchUnixTimePropertyInfo hold property info.
+type InventorySearchUnixTimePropertyInfo struct {
+	Name string
+	b    *InventorySearchBuilder
+}
+
+// GreaterThanOrEqual add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) GreaterThanOrEqual(value time.Time) *InventorySearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.GtEq, Value: value.Unix()})
+	return p.b
+}
+
+// GreaterThan add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) GreaterThan(value time.Time) *InventorySearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Gt, Value: value.Unix()})
+	return p.b
+}
+
+// LessThanOrEqual add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) LessThanOrEqual(value time.Time) *InventorySearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.LtEq, Value: value.Unix()})
+	return p.b
+}
+
+// LessThan add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) LessThan(value time.Time) *InventorySearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Lt, Value: value.Unix()})
+	return p.b
+}
+
+// Equal add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) Equal(value time.Time) *InventorySearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Eq, Value: value.Unix()})
+	return p.b
+}
+
+// Asc add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) Asc() *InventorySearchBuilder {
+	if p.b.opts == nil {
+		p.b.opts = &search.SearchOptions{}
+	}
+	if p.b.opts.Sort == nil {
+		p.b.opts.Sort = &search.SortOptions{}
+	}
+	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+		Expr:    p.Name + "UnixTime",
+		Reverse: true,
+	})
+
+	return p.b
+}
+
+// Desc add query operand.
+func (p *InventorySearchUnixTimePropertyInfo) Desc() *InventorySearchBuilder {
+	if p.b.opts == nil {
+		p.b.opts = &search.SearchOptions{}
+	}
+	if p.b.opts.Sort == nil {
+		p.b.opts.Sort = &search.SortOptions{}
+	}
+	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+		Expr:    p.Name + "UnixTime",
 		Reverse: false,
 	})
 

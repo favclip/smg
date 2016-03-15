@@ -174,3 +174,46 @@ func TestBasicUsage4(t *testing.T) {
 		t.Logf("%#v, %#v", doc, iter.Cursor())
 	}
 }
+
+func TestBasicUsage5(t *testing.T) {
+	c, closer, err := aetest.NewContext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closer()
+
+	src := &e.Inventory{
+		ProductName: "go-chan",
+		Description: "Hi, go-chan!",
+		Stock:       3,
+		Price:       1050,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	index := e.NewInventorySearch()
+	_, err = index.Put(c, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	index.Group(func() {
+		index.ProductName.Match("go-chan").Or().Description.NgramMatch("go-chan")
+	}).Or()
+	index.Stock.IntLessThan(5)
+	index.UpdatedAt.GreaterThanOrEqual(time.Now().AddDate(0, 0, -1))
+
+	iter, err := index.Search(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for {
+		_, doc, err := iter.Next(c)
+		if err == search.Done {
+			break
+		}
+
+		t.Logf("%#v, %#v", doc, iter.Cursor())
+	}
+}

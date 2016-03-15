@@ -38,13 +38,14 @@ type BuildField struct {
 type BuildTag struct {
 	field *BuildField
 
-	Name   string
-	ID     bool // e.g. DocID string `search:",id"`
-	Ignore bool // e.g. Secret string `search:"-"`
-	Ngram  bool // e.g. Description string `search:",ngram"`
-	JSON   bool // e.g. Store []*Store `search:",json"`
-	Rank   bool // e.g. Stock int `search:",rank"`
-	String bool // e.g. Int64String int64 `search:",string"`
+	Name     string
+	ID       bool // e.g. DocID string `search:",id"`
+	Ignore   bool // e.g. Secret string `search:"-"`
+	Ngram    bool // e.g. Description string `search:",ngram"`
+	JSON     bool // e.g. Store []*Store `search:",json"`
+	Rank     bool // e.g. Stock int `search:",rank"`
+	String   bool // e.g. Int64String int64 `search:",string"`
+	UnixTime bool // e.g. Unix time time.Time `search:",unixtime"`
 }
 
 // Parse construct *BuildSource from package & type information.
@@ -79,6 +80,9 @@ func Parse(pkg *genbase.PackageInfo, typeInfos genbase.TypeInfos) (*BuildSource,
 		}
 		if st.HasString() {
 			bu.g.AddImport("strconv", "")
+		}
+		if st.HasUnixTime() {
+			bu.g.AddImport("time", "")
 		}
 		for _, field := range st.Fields {
 			if field.fieldInfo.IsTime() {
@@ -167,6 +171,8 @@ func (b *BuildSource) parseField(st *BuildStruct, typeInfo *genbase.TypeInfo, fi
 					tag.Rank = true
 				case "string":
 					tag.String = true
+				case "unixtime":
+					tag.UnixTime = true
 				}
 			}
 		}
@@ -211,6 +217,9 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 			g.Printf("%[1]s float64\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsBool() {
 			g.Printf("%[1]s float64 // 1(true) or 0(false)\n", field.Name, st.Name())
+		} else if field.Tag.UnixTime {
+			g.Printf("%[1]s time.Time\n", field.Name, st.Name())
+			g.Printf("%[1]sUnixTime float64\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsTime() {
 			g.Printf("%[1]s time.Time\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsString() || field.Tag.JSON {
@@ -306,6 +315,21 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 						dest.%[1]s = str
 					}
 				`, field.Name)
+		} else if field.Tag.UnixTime {
+			if field.fieldInfo.IsTime() {
+				g.Printf(`
+						// Number Field is value between -2,147,483,647 and 2,147,483,647.
+						// but, value of zero time is -62,135,596,800.
+						if src.%[1]s.IsZero() {
+							dest.%[1]sUnixTime = float64(-1)
+						} else {
+							dest.%[1]sUnixTime = float64(src.%[1]s.Unix())
+						}
+						dest.%[1]s = src.%[1]s
+					`, field.Name)
+			} else {
+				return fmt.Errorf("%s: unixtime field should be time.Time", field.Name)
+			}
 		} else {
 			// TODO implement invalid type detection
 			if field.fieldInfo.IsInt64() || field.fieldInfo.IsInt() || field.fieldInfo.IsFloat32() {
@@ -347,6 +371,8 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 		} else if field.fieldInfo.IsNumber() || field.fieldInfo.IsBool() {
 			// special support to bool
 			g.Printf("b.%[1]s = &%[2]sSearchNumberPropertyInfo{\"%[1]s\", b}\n", field.Name, st.Name())
+		} else if field.Tag.UnixTime {
+			g.Printf("b.%[1]s = &%[2]sSearchUnixTimePropertyInfo{\"%[1]s\", b}\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsTime() {
 			g.Printf("b.%[1]s = &%[2]sSearchTimePropertyInfo{\"%[1]s\", b}\n", field.Name, st.Name())
 		} else {
@@ -378,6 +404,8 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 		} else if field.fieldInfo.IsNumber() || field.fieldInfo.IsBool() {
 			// TODO special support to bool
 			g.Printf("%[1]s *%[2]sSearchNumberPropertyInfo\n", field.Name, st.Name())
+		} else if field.Tag.UnixTime {
+			g.Printf("%[1]s *%[2]sSearchUnixTimePropertyInfo\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsTime() {
 			g.Printf("%[1]s *%[2]sSearchTimePropertyInfo\n", field.Name, st.Name())
 		} else {
@@ -826,6 +854,74 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 				return p.b
 			}
+
+			// %[1]sSearchUnixTimePropertyInfo hold property info.
+			type %[1]sSearchUnixTimePropertyInfo struct {
+				Name string
+				b    *%[1]sSearchBuilder
+			}
+
+			// GreaterThanOrEqual add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) GreaterThanOrEqual(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.GtEq, Value: value.Unix()})
+				return p.b
+			}
+
+			// GreaterThan add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) GreaterThan(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Gt, Value: value.Unix()})
+				return p.b
+			}
+
+			// LessThanOrEqual add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) LessThanOrEqual(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.LtEq, Value: value.Unix()})
+				return p.b
+			}
+
+			// LessThan add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) LessThan(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Lt, Value: value.Unix()})
+				return p.b
+			}
+
+			// Equal add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) Equal(value time.Time) *%[1]sSearchBuilder {
+				p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Eq, Value: value.Unix()})
+				return p.b
+			}
+
+			// Asc add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) Asc() *%[1]sSearchBuilder {
+				if p.b.opts == nil {
+					p.b.opts = &search.SearchOptions{}
+				}
+				if p.b.opts.Sort == nil {
+					p.b.opts.Sort = &search.SortOptions{}
+				}
+				p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+					Expr:    p.Name + "UnixTime",
+					Reverse: true,
+				})
+
+				return p.b
+			}
+
+			// Desc add query operand.
+			func (p *%[1]sSearchUnixTimePropertyInfo) Desc() *%[1]sSearchBuilder {
+				if p.b.opts == nil {
+					p.b.opts = &search.SearchOptions{}
+				}
+				if p.b.opts.Sort == nil {
+					p.b.opts.Sort = &search.SortOptions{}
+				}
+				p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+					Expr:    p.Name + "UnixTime",
+					Reverse: false,
+				})
+
+				return p.b
+			}
 		`, st.Name(), "%")
 
 	g.Printf("\n\n")
@@ -892,6 +988,16 @@ func (st *BuildStruct) HasNgram() bool {
 func (st *BuildStruct) HasString() bool {
 	for _, field := range st.Fields {
 		if field.Tag.String {
+			return true
+		}
+	}
+	return false
+}
+
+// HasUnixTime returns struct has unix time annotated field.
+func (st *BuildStruct) HasUnixTime() bool {
+	for _, field := range st.Fields {
+		if field.Tag.UnixTime {
 			return true
 		}
 	}
