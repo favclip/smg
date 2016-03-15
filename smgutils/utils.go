@@ -240,3 +240,16 @@ func Sanitize(value string) string {
 	value = strings.Replace(value, `"`, `\"`, -1)
 	return value
 }
+
+// Unix returns unix time.
+// Number Field is value between -2,147,483,647 and 2,147,483,647.
+// https://cloud.google.com/appengine/docs/go/search/#Go_Documents_and_fields
+func Unix(t time.Time) int64 {
+	unixtime := t.Unix()
+	if unixtime < -2147483647 {
+		unixtime = -2147483647
+	} else if 2147483647 < unixtime {
+		unixtime = 2147483647
+	}
+	return unixtime
+}

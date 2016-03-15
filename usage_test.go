@@ -201,7 +201,7 @@ func TestBasicUsage5(t *testing.T) {
 		index.ProductName.Match("go-chan").Or().Description.NgramMatch("go-chan")
 	}).Or()
 	index.Stock.IntLessThan(5)
-	index.UpdatedAt.GreaterThanOrEqual(time.Now().AddDate(0, 0, -1))
+	index.UpdatedAt.UnixTimeGreaterThanOrEqual(time.Now().AddDate(0, 0, -1))
 
 	iter, err := index.Search(c)
 	if err != nil {
@@ -215,5 +215,56 @@ func TestBasicUsage5(t *testing.T) {
 		}
 
 		t.Logf("%#v, %#v", doc, iter.Cursor())
+	}
+}
+
+func TestBasicUsage6(t *testing.T) {
+	c, closer, err := aetest.NewContext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closer()
+
+	utc, err := time.LoadLocation("UTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var list []*e.Inventory
+	list = append(list, &e.Inventory{ID: 1, ProductName: "go-chan1", UpdatedAt: time.Now()})
+	list = append(list, &e.Inventory{ID: 2, ProductName: "go-chan2", UpdatedAt: time.Now().Add(1 * time.Hour)})
+	list = append(list, &e.Inventory{ID: 3, ProductName: "go-chan3", UpdatedAt: time.Date(2050, 1, 1, 0, 0, 0, 0, utc)})
+	list = append(list, &e.Inventory{ID: 4, ProductName: "go-chan4", UpdatedAt: time.Time{}})
+
+	index := e.NewInventorySearch()
+
+	for _, src := range list {
+		_, err = index.Put(c, src)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	index.UpdatedAt.UnixTimeGreaterThanOrEqual(time.Time{})
+	index.UpdatedAt.UnixTimeLessThan(time.Date(2050, 1, 1, 0, 0, 0, 0, utc))
+	index.UpdatedAt.UnixTimeDesc()
+
+	iter, err := index.Search(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count := 0
+	for {
+		_, doc, err := iter.Next(c)
+		if err == search.Done {
+			break
+		}
+
+		count++
+		t.Logf("%#v, %#v", doc, iter.Cursor())
+	}
+	if count != 3 {
+		t.Fatalf("unexpected, actual: %d, expected 3", count)
 	}
 }

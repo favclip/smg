@@ -498,36 +498,98 @@ type SampleSearchUnixTimePropertyInfo struct {
 
 // GreaterThanOrEqual add query operand.
 func (p *SampleSearchUnixTimePropertyInfo) GreaterThanOrEqual(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.GtEq, Value: value.Unix()})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.GtEq, Value: value.UTC()})
 	return p.b
 }
 
 // GreaterThan add query operand.
 func (p *SampleSearchUnixTimePropertyInfo) GreaterThan(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Gt, Value: value.Unix()})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Gt, Value: value.UTC()})
 	return p.b
 }
 
 // LessThanOrEqual add query operand.
 func (p *SampleSearchUnixTimePropertyInfo) LessThanOrEqual(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.LtEq, Value: value.Unix()})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.LtEq, Value: value.UTC()})
 	return p.b
 }
 
 // LessThan add query operand.
 func (p *SampleSearchUnixTimePropertyInfo) LessThan(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Lt, Value: value.Unix()})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Lt, Value: value.UTC()})
 	return p.b
 }
 
 // Equal add query operand.
 func (p *SampleSearchUnixTimePropertyInfo) Equal(value time.Time) *SampleSearchBuilder {
-	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Eq, Value: value.Unix()})
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name, Type: smgutils.Eq, Value: value.UTC()})
 	return p.b
 }
 
 // Asc add query operand.
 func (p *SampleSearchUnixTimePropertyInfo) Asc() *SampleSearchBuilder {
+	if p.b.opts == nil {
+		p.b.opts = &search.SearchOptions{}
+	}
+	if p.b.opts.Sort == nil {
+		p.b.opts.Sort = &search.SortOptions{}
+	}
+	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+		Expr:    p.Name,
+		Reverse: true,
+	})
+
+	return p.b
+}
+
+// Desc add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) Desc() *SampleSearchBuilder {
+	if p.b.opts == nil {
+		p.b.opts = &search.SearchOptions{}
+	}
+	if p.b.opts.Sort == nil {
+		p.b.opts.Sort = &search.SortOptions{}
+	}
+	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
+		Expr:    p.Name,
+		Reverse: false,
+	})
+
+	return p.b
+}
+
+// UnixTimeGreaterThanOrEqual add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeGreaterThanOrEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.GtEq, Value: smgutils.Unix(value)})
+	return p.b
+}
+
+// UnixTimeGreaterThan add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeGreaterThan(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Gt, Value: smgutils.Unix(value)})
+	return p.b
+}
+
+// UnixTimeLessThanOrEqual add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeLessThanOrEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.LtEq, Value: smgutils.Unix(value)})
+	return p.b
+}
+
+// UnixTimeLessThan add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeLessThan(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Lt, Value: smgutils.Unix(value)})
+	return p.b
+}
+
+// UnixTimeEqual add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeEqual(value time.Time) *SampleSearchBuilder {
+	p.b.currentOp.Children = append(p.b.currentOp.Children, &smgutils.Op{FieldName: p.Name + "UnixTime", Type: smgutils.Eq, Value: smgutils.Unix(value)})
+	return p.b
+}
+
+// UnixTimeAsc add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeAsc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
 	}
@@ -542,8 +604,8 @@ func (p *SampleSearchUnixTimePropertyInfo) Asc() *SampleSearchBuilder {
 	return p.b
 }
 
-// Desc add query operand.
-func (p *SampleSearchUnixTimePropertyInfo) Desc() *SampleSearchBuilder {
+// UnixTimeDesc add query operand.
+func (p *SampleSearchUnixTimePropertyInfo) UnixTimeDesc() *SampleSearchBuilder {
 	if p.b.opts == nil {
 		p.b.opts = &search.SearchOptions{}
 	}
