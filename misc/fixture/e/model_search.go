@@ -95,12 +95,14 @@ func (src *Inventory) Searchfy() (*InventorySearch, error) {
 	dest.CreatedAt = src.CreatedAt
 
 	// Number Field is value between -2,147,483,647 and 2,147,483,647.
-	// but, value of zero time is -62,135,596,800.
-	if src.UpdatedAt.IsZero() {
-		dest.UpdatedAtUnixTime = float64(-1)
-	} else {
-		dest.UpdatedAtUnixTime = float64(src.UpdatedAt.Unix())
+	// https://cloud.google.com/appengine/docs/go/search/#Go_Documents_and_fields
+	unixtime := src.UpdatedAt.Unix()
+	if unixtime < -2147483647 {
+		unixtime = -2147483647
+	} else if 2147483647 < unixtime {
+		unixtime = 2147483647
 	}
+	dest.UpdatedAtUnixTime = float64(unixtime)
 	dest.UpdatedAt = src.UpdatedAt
 	return dest, nil
 }

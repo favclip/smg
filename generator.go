@@ -319,12 +319,14 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 			if field.fieldInfo.IsTime() {
 				g.Printf(`
 						// Number Field is value between -2,147,483,647 and 2,147,483,647.
-						// but, value of zero time is -62,135,596,800.
-						if src.%[1]s.IsZero() {
-							dest.%[1]sUnixTime = float64(-1)
-						} else {
-							dest.%[1]sUnixTime = float64(src.%[1]s.Unix())
+						// https://cloud.google.com/appengine/docs/go/search/#Go_Documents_and_fields
+						unixtime := src.%[1]s.Unix()
+						if unixtime < -2147483647 {
+							unixtime = -2147483647
+						} else if 2147483647 < unixtime {
+							unixtime = 2147483647
 						}
+						dest.%[1]sUnixTime = float64(unixtime)
 						dest.%[1]s = src.%[1]s
 					`, field.Name)
 			} else {
