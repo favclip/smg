@@ -21,7 +21,7 @@ type Inventory struct {
 	AdminNames  []string  `search:",json"`
 	Shops       []*Shop   `search:",json"`
 	CreatedAt   time.Time `datastore:",noindex"`
-	UpdatedAt   time.Time `datastore:",noindex" search:"-"`
+	UpdatedAt   time.Time `datastore:",noindex" search:",unixtime"`
 }
 
 type Shop struct {

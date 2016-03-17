@@ -163,3 +163,32 @@ func TestSanitize(t *testing.T) {
 		t.Errorf("unexpected: %s", s)
 	}
 }
+
+func TestUnix(t *testing.T) {
+	utc, err := time.LoadLocation("UTC")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	unixtime := Unix(time.Date(1970, 1, 1, 0, 0, 0, 0, utc))
+	if unixtime != 0 {
+		t.Errorf("unexpected: %d", unixtime)
+	}
+}
+
+func TestUnixMax(t *testing.T) {
+	utc, err := time.LoadLocation("UTC")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	unixtime := Unix(time.Date(2050, 1, 1, 0, 0, 0, 0, utc))
+	if unixtime != 2147483647 {
+		t.Errorf("unexpected: %d", unixtime)
+	}
+}
+
+func TestUnixMin(t *testing.T) {
+	unixtime := Unix(time.Time{})
+	if unixtime != -2147483647 {
+		t.Errorf("unexpected: %d", unixtime)
+	}
+}
