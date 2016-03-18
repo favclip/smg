@@ -239,6 +239,8 @@ func NewInventorySearch() *InventorySearchBuilder {
 	return b
 }
 
+var _ smgutils.SearchBuilder = &InventorySearchBuilder{}
+
 type InventorySearchBuilder struct {
 	rootOp      *smgutils.Op
 	currentOp   *smgutils.Op // groupの扱い
@@ -251,6 +253,23 @@ type InventorySearchBuilder struct {
 	AdminNames  *InventorySearchStringPropertyInfo
 	Shops       *InventorySearchStringPropertyInfo
 	CreatedAt   *InventorySearchTimePropertyInfo
+}
+
+func (b *InventorySearchBuilder) IndexName() string {
+	return "Inventory"
+}
+
+func (b *InventorySearchBuilder) QueryString() (string, error) {
+	buffer := &bytes.Buffer{}
+	err := b.rootOp.Query(buffer)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
+
+func (b *InventorySearchBuilder) SearchOptions() *search.SearchOptions {
+	return b.opts
 }
 
 func (b *InventorySearchBuilder) And() *InventorySearchBuilder {
@@ -291,7 +310,7 @@ func (b *InventorySearchBuilder) Put(c context.Context, src *Inventory) (string,
 }
 
 func (b *InventorySearchBuilder) PutDocument(c context.Context, src *InventorySearch) (string, error) {
-	index, err := search.Open("Inventory")
+	index, err := search.Open(b.IndexName())
 	if err != nil {
 		return "", err
 	}
@@ -322,18 +341,17 @@ func (b *InventorySearchBuilder) Opts() *InventorySearchOptions {
 }
 
 func (b *InventorySearchBuilder) Search(c context.Context) (*InventorySearchIterator, error) {
-	index, err := search.Open("Inventory")
+	index, err := search.Open(b.IndexName())
 	if err != nil {
 		return nil, err
 	}
 	b.index = index
 
-	buffer := &bytes.Buffer{}
-	err = b.rootOp.Query(buffer)
+	query, err := b.QueryString()
 	if err != nil {
 		return nil, err
 	}
-	b.query = buffer.String()
+	b.query = query
 	log.Debugf(c, "query: `%s`, opts: %#v", b.query, b.opts)
 	iter := b.index.Search(c, b.query, b.opts)
 

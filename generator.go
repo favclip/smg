@@ -380,6 +380,8 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 	// implement *SearchBuilder struct
 	g.Printf(`
+			var _ smgutils.SearchBuilder = &%[1]sSearchBuilder{}
+
 			// %[1]sSearchBuilder builds Search API query.
 			type %[1]sSearchBuilder struct {
 				rootOp      *smgutils.Op
@@ -410,6 +412,26 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 	// implement SearchBuilder methods and others
 	g.Printf(`
+			// IndexName returns name of target index.
+			func (b *%[1]sSearchBuilder) IndexName() string {
+				return "%[1]s"
+			}
+
+			// QueryString returns query string.
+			func (b *%[1]sSearchBuilder) QueryString() (string, error) {
+				buffer := &bytes.Buffer{}
+				err := b.rootOp.Query(buffer)
+				if err != nil {
+					return "", err
+				}
+				return buffer.String(), nil
+			}
+
+			// SearchOptions returns search options.
+			func (b *%[1]sSearchBuilder) SearchOptions() *search.SearchOptions {
+				return b.opts
+			}
+
 			// And append new operant to query.
 			func (b *%[1]sSearchBuilder) And() *%[1]sSearchBuilder {
 				b.currentOp.Children = append(b.currentOp.Children, &smgutils.Op{Type: smgutils.And})
@@ -455,7 +477,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 			// PutDocument to Index.
 			func (b *%[1]sSearchBuilder) PutDocument(c context.Context, src *%[1]sSearch) (string, error) {
-				index, err := search.Open("%[1]s")
+				index, err := search.Open(b.IndexName())
 				if err != nil {
 					return "", err
 				}
@@ -513,7 +535,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 			// DeleteByDocID from Index.
 			func (b *%[1]sSearchBuilder) DeleteByDocID(c context.Context, docID string) error {
-				index, err := search.Open("%[1]s")
+				index, err := search.Open(b.IndexName())
 				if err != nil {
 					return err
 				}
@@ -528,18 +550,17 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 			// Search returns *%[1]sSearchIterator, It is result from Index.
 			func (b *%[1]sSearchBuilder) Search(c context.Context) (*%[1]sSearchIterator, error) {
-				index, err := search.Open("%[1]s")
+				index, err := search.Open(b.IndexName())
 				if err != nil {
 					return nil, err
 				}
 				b.index = index
 
-				buffer := &bytes.Buffer{}
-				err = b.rootOp.Query(buffer)
+				query, err := b.QueryString()
 				if err != nil {
 					return nil, err
 				}
-				b.query = buffer.String()
+				b.query = query
 				log.Debugf(c, "query: '%[2]ss', opts: %[2]s#v", b.query, b.opts)
 				iter := b.index.Search(c, b.query, b.opts)
 
