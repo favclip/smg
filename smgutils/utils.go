@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/net/context"
+	"google.golang.org/appengine/search"
 )
 
 // OpType is operand type of Search API.
@@ -46,6 +47,16 @@ type Op struct {
 	Value     interface{}
 	Parent    *Op
 	Children  []*Op
+}
+
+// SearchBuilder is common interface for generated struct base SearchBuilder.
+type SearchBuilder interface {
+	// IndexName returns name of target index.
+	IndexName() string
+	// QueryString returns query string.
+	QueryString() (string, error)
+	// SearchOptions returns search options.
+	SearchOptions() *search.SearchOptions
 }
 
 // Query builds query string.

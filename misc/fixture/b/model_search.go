@@ -64,6 +64,8 @@ func NewSampleSearch() *SampleSearchBuilder {
 	return b
 }
 
+var _ smgutils.SearchBuilder = &SampleSearchBuilder{}
+
 // SampleSearchBuilder builds Search API query.
 type SampleSearchBuilder struct {
 	rootOp    *smgutils.Op
@@ -78,6 +80,26 @@ type SampleSearchBuilder struct {
 	E         *SampleSearchNumberPropertyInfo
 	F         *SampleSearchTimePropertyInfo
 	G         *SampleSearchNumberPropertyInfo
+}
+
+// IndexName returns name of target index.
+func (b *SampleSearchBuilder) IndexName() string {
+	return "Sample"
+}
+
+// QueryString returns query string.
+func (b *SampleSearchBuilder) QueryString() (string, error) {
+	buffer := &bytes.Buffer{}
+	err := b.rootOp.Query(buffer)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
+
+// SearchOptions returns search options.
+func (b *SampleSearchBuilder) SearchOptions() *search.SearchOptions {
+	return b.opts
 }
 
 // And append new operant to query.
@@ -125,7 +147,7 @@ func (b *SampleSearchBuilder) Put(c context.Context, src *Sample) (string, error
 
 // PutDocument to Index.
 func (b *SampleSearchBuilder) PutDocument(c context.Context, src *SampleSearch) (string, error) {
-	index, err := search.Open("Sample")
+	index, err := search.Open(b.IndexName())
 	if err != nil {
 		return "", err
 	}
@@ -173,7 +195,7 @@ func (b *SampleSearchBuilder) DeleteDocument(c context.Context, src *SampleSearc
 
 // DeleteByDocID from Index.
 func (b *SampleSearchBuilder) DeleteByDocID(c context.Context, docID string) error {
-	index, err := search.Open("Sample")
+	index, err := search.Open(b.IndexName())
 	if err != nil {
 		return err
 	}
@@ -188,18 +210,17 @@ func (b *SampleSearchBuilder) Opts() *SampleSearchOptions {
 
 // Search returns *SampleSearchIterator, It is result from Index.
 func (b *SampleSearchBuilder) Search(c context.Context) (*SampleSearchIterator, error) {
-	index, err := search.Open("Sample")
+	index, err := search.Open(b.IndexName())
 	if err != nil {
 		return nil, err
 	}
 	b.index = index
 
-	buffer := &bytes.Buffer{}
-	err = b.rootOp.Query(buffer)
+	query, err := b.QueryString()
 	if err != nil {
 		return nil, err
 	}
-	b.query = buffer.String()
+	b.query = query
 	log.Debugf(c, "query: '%s', opts: %#v", b.query, b.opts)
 	iter := b.index.Search(c, b.query, b.opts)
 
