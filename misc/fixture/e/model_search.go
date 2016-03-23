@@ -105,6 +105,9 @@ func NewInventorySearch() *InventorySearchBuilder {
 	b := &InventorySearchBuilder{
 		rootOp:    op,
 		currentOp: op,
+		opts: &search.SearchOptions{
+			Sort: &search.SortOptions{},
+		},
 	}
 	b.ProductName = &InventorySearchStringPropertyInfo{"ProductName", b}
 	b.Description = &InventorySearchNgramStringPropertyInfo{InventorySearchStringPropertyInfo{"Description", b}}
@@ -293,18 +296,12 @@ type InventorySearchOptions struct {
 
 // Limit setup opts.
 func (b *InventorySearchOptions) Limit(value int) *InventorySearchOptions {
-	if b.b.opts == nil {
-		b.b.opts = &search.SearchOptions{}
-	}
 	b.b.opts.Limit = value
 	return b
 }
 
 // IDsOnly setup opts.
 func (b *InventorySearchOptions) IDsOnly() *InventorySearchOptions {
-	if b.b.opts == nil {
-		b.b.opts = &search.SearchOptions{}
-	}
 	b.b.opts.IDsOnly = true
 	return b
 }
