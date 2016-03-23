@@ -228,6 +228,9 @@ func NewInventorySearch() *InventorySearchBuilder {
 	b := &InventorySearchBuilder{
 		rootOp:    op,
 		currentOp: op,
+		opts: &search.SearchOptions{
+			Sort: &search.SortOptions{},
+		},
 	}
 	b.ProductName = &InventorySearchStringPropertyInfo{"ProductName", b}
 	b.Description = &InventorySearchNgramStringPropertyInfo{InventorySearchStringPropertyInfo{"Description", b}}
@@ -482,12 +485,6 @@ func (p *InventorySearchNumberPropertyInfo) Int64Equal(value int64) *InventorySe
 }
 
 func (p *InventorySearchNumberPropertyInfo) Asc() *InventorySearchBuilder {
-	if p.b.opts == nil {
-		p.b.opts = &search.SearchOptions{}
-	}
-	if p.b.opts.Sort == nil {
-		p.b.opts.Sort = &search.SortOptions{}
-	}
 	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
 		Expr:    p.Name,
 		Reverse: true,
@@ -497,12 +494,6 @@ func (p *InventorySearchNumberPropertyInfo) Asc() *InventorySearchBuilder {
 }
 
 func (p *InventorySearchNumberPropertyInfo) Desc() *InventorySearchBuilder {
-	if p.b.opts == nil {
-		p.b.opts = &search.SearchOptions{}
-	}
-	if p.b.opts.Sort == nil {
-		p.b.opts.Sort = &search.SortOptions{}
-	}
 	p.b.opts.Sort.Expressions = append(p.b.opts.Sort.Expressions, search.SortExpression{
 		Expr:    p.Name,
 		Reverse: false,

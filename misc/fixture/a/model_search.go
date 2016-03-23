@@ -36,6 +36,9 @@ func NewSampleSearch() *SampleSearchBuilder {
 	b := &SampleSearchBuilder{
 		rootOp:    op,
 		currentOp: op,
+		opts: &search.SearchOptions{
+			Sort: &search.SortOptions{},
+		},
 	}
 	b.Foo = &SampleSearchStringPropertyInfo{"Foo", b}
 
@@ -206,18 +209,12 @@ type SampleSearchOptions struct {
 
 // Limit setup opts.
 func (b *SampleSearchOptions) Limit(value int) *SampleSearchOptions {
-	if b.b.opts == nil {
-		b.b.opts = &search.SearchOptions{}
-	}
 	b.b.opts.Limit = value
 	return b
 }
 
 // IDsOnly setup opts.
 func (b *SampleSearchOptions) IDsOnly() *SampleSearchOptions {
-	if b.b.opts == nil {
-		b.b.opts = &search.SearchOptions{}
-	}
 	b.b.opts.IDsOnly = true
 	return b
 }

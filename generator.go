@@ -352,6 +352,9 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				b := &%[1]sSearchBuilder{
 					rootOp:    op,
 					currentOp: op,
+					opts: &search.SearchOptions{
+						Sort: &search.SortOptions {},
+					},
 				}
 		`, st.Name())
 
@@ -574,18 +577,12 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 			// Limit setup opts.
 			func (b *%[1]sSearchOptions) Limit(value int) *%[1]sSearchOptions {
-				if b.b.opts == nil {
-					b.b.opts = &search.SearchOptions{}
-				}
 				b.b.opts.Limit = value
 				return b
 			}
 
 			// IDsOnly setup opts.
 			func (b *%[1]sSearchOptions) IDsOnly() *%[1]sSearchOptions {
-				if b.b.opts == nil {
-					b.b.opts = &search.SearchOptions{}
-				}
 				b.b.opts.IDsOnly = true
 				return b
 			}
