@@ -11,7 +11,6 @@ import (
 
 	"github.com/favclip/genbase"
 	"github.com/favclip/smg"
-	_ "golang.org/x/tools/go/gcimporter"
 )
 
 var (
