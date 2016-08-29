@@ -213,6 +213,8 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 			g.Printf("%[1]sBigram string\n", field.Name, st.Name())
 		} else if field.Tag.String {
 			g.Printf("%[1]s string\n", field.Name, st.Name())
+		} else if field.Tag.JSON {
+			g.Printf("%[1]s string\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsNumber() {
 			g.Printf("%[1]s float64\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsBool() {
@@ -222,7 +224,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 			g.Printf("%[1]sUnixTime float64\n", field.Name, st.Name())
 		} else if field.fieldInfo.IsTime() {
 			g.Printf("%[1]s time.Time\n", field.Name, st.Name())
-		} else if field.fieldInfo.IsString() || field.Tag.JSON {
+		} else if field.fieldInfo.IsString() {
 			g.Printf("%[1]s string\n", field.Name, st.Name())
 		} else {
 			return fmt.Errorf("%s: unknown field type in %s", field.Name, st.Name())
