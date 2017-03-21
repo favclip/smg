@@ -208,24 +208,24 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 		if field.Tag.ID {
 			g.Printf("%[1]s string\n", field.Name)
 		} else if field.Tag.Ngram {
-			g.Printf("%[1]s string\n", field.Name, st.Name())
-			g.Printf("%[1]sUnigram string\n", field.Name, st.Name())
-			g.Printf("%[1]sBigram string\n", field.Name, st.Name())
+			g.Printf("%[1]s string\n", field.Name)
+			g.Printf("%[1]sUnigram string\n", field.Name)
+			g.Printf("%[1]sBigram string\n", field.Name)
 		} else if field.Tag.String {
-			g.Printf("%[1]s string\n", field.Name, st.Name())
+			g.Printf("%[1]s string\n", field.Name)
 		} else if field.Tag.JSON {
-			g.Printf("%[1]s string\n", field.Name, st.Name())
+			g.Printf("%[1]s string\n", field.Name)
 		} else if field.fieldInfo.IsNumber() {
-			g.Printf("%[1]s float64\n", field.Name, st.Name())
+			g.Printf("%[1]s float64\n", field.Name)
 		} else if field.fieldInfo.IsBool() {
-			g.Printf("%[1]s float64 // 1(true) or 0(false)\n", field.Name, st.Name())
+			g.Printf("%[1]s float64 // 1(true) or 0(false)\n", field.Name)
 		} else if field.Tag.UnixTime {
-			g.Printf("%[1]s time.Time\n", field.Name, st.Name())
-			g.Printf("%[1]sUnixTime float64\n", field.Name, st.Name())
+			g.Printf("%[1]s time.Time\n", field.Name)
+			g.Printf("%[1]sUnixTime float64\n", field.Name)
 		} else if field.fieldInfo.IsTime() {
-			g.Printf("%[1]s time.Time\n", field.Name, st.Name())
+			g.Printf("%[1]s time.Time\n", field.Name)
 		} else if field.fieldInfo.IsString() {
-			g.Printf("%[1]s string\n", field.Name, st.Name())
+			g.Printf("%[1]s string\n", field.Name)
 		} else {
 			return fmt.Errorf("%s: unknown field type in %s", field.Name, st.Name())
 		}
@@ -480,40 +480,77 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b.PutDocument(c, doc)
 			}
 
-			// PutDocument to Index.
+			// PutMulti documents to Index.
+			func (b *%[1]sSearchBuilder) PutMulti(c context.Context, srcs []*%[1]s) ([]string, error) {
+				docs := make([]*%[1]sSearch, 0, len(srcs))
+				for _, src := range srcs {
+					doc, err := src.Searchfy()
+					if err != nil {
+						return nil, err
+					}
+
+					docs = append(docs, doc)
+				}
+
+				return b.PutDocumentMulti(c, docs)
+			}
+
+			// PutDocument to Index
 			func (b *%[1]sSearchBuilder) PutDocument(c context.Context, src *%[1]sSearch) (string, error) {
+				docIDs, err := b.PutDocumentMulti(c, []*%[1]sSearch{src})
+				if err != nil {
+					return "", err
+				}
+
+				return docIDs[0], nil
+			}
+
+			// PutDocumentMulti to Index.
+			func (b *%[1]sSearchBuilder) PutDocumentMulti(c context.Context, srcs []*%[1]sSearch) ([]string, error) {
 				index, err := search.Open(b.IndexName())
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 
-				docID := ""
-				if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
-					docID, err = v.DocID(c)
-					if err != nil {
-						return "", err
+				docIDs := make([]string, 0, len(srcs))
+				putSrcs := make([]interface{}, 0, len(srcs))
+				for _, src := range srcs {
+					docID := ""
+					if v, ok := interface{}(src).(smgutils.DocIDer); ok {
+						docID, err = v.DocID(c)
+						if err != nil {
+							return nil, err
+						}
+			`, st.Name())
+	if st.HasID() {
+		g.Printf("src.ID = docID")
+	}
+	g.Printf(`
 					}
-			`, st.Name(), "%")
-	if st.HasID() {
-		g.Printf("src.ID = docID")
-	}
-	g.Printf(`
+
+					docIDs = append(docIDs, docID)
+					putSrcs = append(putSrcs, src)
+
+					log.Debugf(c, "id: %[2]s#v, payload: %[2]s#v", docID, src)
 				}
 
-				log.Debugf(c, "id: %[2]s#v, payload: %[2]s#v", docID, src)
 
-				docID, err = index.Put(c, docID, src)
+				docIDs, err = index.PutMulti(c, docIDs, putSrcs)
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 
 			`, st.Name(), "%")
 	if st.HasID() {
-		g.Printf("src.ID = docID")
+		g.Printf(`
+				for idx, docID := range docIDs {
+					srcs[idx].ID = docID
+				}
+		`)
 	}
 	g.Printf(`
 
-				return docID, nil
+				return docIDs, nil
 			}
 
 			// Delete document from Index.
@@ -525,27 +562,57 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				return b.DeleteDocument(c, doc)
 			}
 
-			// DeleteDocument from Index.
-			func (b *%[1]sSearchBuilder) DeleteDocument(c context.Context, src *%[1]sSearch) error {
-				if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
-					docID, err := v.DocID(c)
+			// DeleteMulti documents from Index.
+			func (b *%[1]sSearchBuilder) DeleteMulti(c context.Context, srcs []*%[1]s) error {
+				docs := make([]*%[1]sSearch, 0, len(srcs))
+				for _, src := range srcs {
+					doc, err := src.Searchfy()
 					if err != nil {
 						return err
 					}
-					return b.DeleteByDocID(c, docID)
+
+					docs = append(docs, doc)
+				}
+				return b.DeleteDocumentMulti(c, docs)
+			}
+
+			// DeleteDocument from Index.
+			func (b *%[1]sSearchBuilder) DeleteDocument(c context.Context, src *%[1]sSearch) error {
+				return b.DeleteDocumentMulti(c, []*%[1]sSearch{src})
+			}
+
+			// DeleteDocumentMulti from Index.
+			func (b *%[1]sSearchBuilder) DeleteDocumentMulti(c context.Context, srcs []*%[1]sSearch) error {
+				docIDs := make([]string, 0, len(srcs))
+				for _, src := range srcs {
+					if v, ok := interface{}(src).(smgutils.DocIDer); ok {
+						docID, err := v.DocID(c)
+						if err != nil {
+							return err
+						}
+						docIDs = append(docIDs, docID)
+						continue
+					}
+
+					return errors.New("src is not implemented DocIDer interface")
 				}
 
-				return errors.New("src is not implemented DocIDer interface")
+				return b.DeleteMultiByDocIDs(c, docIDs)
 			}
 
 			// DeleteByDocID from Index.
 			func (b *%[1]sSearchBuilder) DeleteByDocID(c context.Context, docID string) error {
+				return b.DeleteMultiByDocIDs(c, []string{docID})
+			}
+
+			// DeleteMultiByDocIDs from Index.
+			func (b *%[1]sSearchBuilder) DeleteMultiByDocIDs(c context.Context, docIDs []string) error {
 				index, err := search.Open(b.IndexName())
 				if err != nil {
 					return err
 				}
 
-				return index.Delete(c, docID)
+				return index.DeleteMulti(c, docIDs)
 			}
 
 			// Opts returns *%[1]sSearchOptions.
@@ -998,7 +1065,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 
 				return p.b
 			}
-		`, st.Name(), "%")
+		`, st.Name())
 
 	g.Printf("\n\n")
 

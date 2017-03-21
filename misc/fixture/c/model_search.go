@@ -134,30 +134,62 @@ func (b *SampleSearchBuilder) Put(c context.Context, src *Sample) (string, error
 	return b.PutDocument(c, doc)
 }
 
-// PutDocument to Index.
-func (b *SampleSearchBuilder) PutDocument(c context.Context, src *SampleSearch) (string, error) {
-	index, err := search.Open(b.IndexName())
-	if err != nil {
-		return "", err
-	}
-
-	docID := ""
-	if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
-		docID, err = v.DocID(c)
+// PutMulti documents to Index.
+func (b *SampleSearchBuilder) PutMulti(c context.Context, srcs []*Sample) ([]string, error) {
+	docs := make([]*SampleSearch, 0, len(srcs))
+	for _, src := range srcs {
+		doc, err := src.Searchfy()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
+		docs = append(docs, doc)
 	}
 
-	log.Debugf(c, "id: %#v, payload: %#v", docID, src)
+	return b.PutDocumentMulti(c, docs)
+}
 
-	docID, err = index.Put(c, docID, src)
+// PutDocument to Index
+func (b *SampleSearchBuilder) PutDocument(c context.Context, src *SampleSearch) (string, error) {
+	docIDs, err := b.PutDocumentMulti(c, []*SampleSearch{src})
 	if err != nil {
 		return "", err
 	}
 
-	return docID, nil
+	return docIDs[0], nil
+}
+
+// PutDocumentMulti to Index.
+func (b *SampleSearchBuilder) PutDocumentMulti(c context.Context, srcs []*SampleSearch) ([]string, error) {
+	index, err := search.Open(b.IndexName())
+	if err != nil {
+		return nil, err
+	}
+
+	docIDs := make([]string, 0, len(srcs))
+	putSrcs := make([]interface{}, 0, len(srcs))
+	for _, src := range srcs {
+		docID := ""
+		if v, ok := interface{}(src).(smgutils.DocIDer); ok {
+			docID, err = v.DocID(c)
+			if err != nil {
+				return nil, err
+			}
+
+		}
+
+		docIDs = append(docIDs, docID)
+		putSrcs = append(putSrcs, src)
+
+		log.Debugf(c, "id: %#v, payload: %#v", docID, src)
+	}
+
+	docIDs, err = index.PutMulti(c, docIDs, putSrcs)
+	if err != nil {
+		return nil, err
+	}
+
+	return docIDs, nil
 }
 
 // Delete document from Index.
@@ -169,27 +201,57 @@ func (b *SampleSearchBuilder) Delete(c context.Context, src *Sample) error {
 	return b.DeleteDocument(c, doc)
 }
 
-// DeleteDocument from Index.
-func (b *SampleSearchBuilder) DeleteDocument(c context.Context, src *SampleSearch) error {
-	if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
-		docID, err := v.DocID(c)
+// DeleteMulti documents from Index.
+func (b *SampleSearchBuilder) DeleteMulti(c context.Context, srcs []*Sample) error {
+	docs := make([]*SampleSearch, 0, len(srcs))
+	for _, src := range srcs {
+		doc, err := src.Searchfy()
 		if err != nil {
 			return err
 		}
-		return b.DeleteByDocID(c, docID)
+
+		docs = append(docs, doc)
+	}
+	return b.DeleteDocumentMulti(c, docs)
+}
+
+// DeleteDocument from Index.
+func (b *SampleSearchBuilder) DeleteDocument(c context.Context, src *SampleSearch) error {
+	return b.DeleteDocumentMulti(c, []*SampleSearch{src})
+}
+
+// DeleteDocumentMulti from Index.
+func (b *SampleSearchBuilder) DeleteDocumentMulti(c context.Context, srcs []*SampleSearch) error {
+	docIDs := make([]string, 0, len(srcs))
+	for _, src := range srcs {
+		if v, ok := interface{}(src).(smgutils.DocIDer); ok {
+			docID, err := v.DocID(c)
+			if err != nil {
+				return err
+			}
+			docIDs = append(docIDs, docID)
+			continue
+		}
+
+		return errors.New("src is not implemented DocIDer interface")
 	}
 
-	return errors.New("src is not implemented DocIDer interface")
+	return b.DeleteMultiByDocIDs(c, docIDs)
 }
 
 // DeleteByDocID from Index.
 func (b *SampleSearchBuilder) DeleteByDocID(c context.Context, docID string) error {
+	return b.DeleteMultiByDocIDs(c, []string{docID})
+}
+
+// DeleteMultiByDocIDs from Index.
+func (b *SampleSearchBuilder) DeleteMultiByDocIDs(c context.Context, docIDs []string) error {
 	index, err := search.Open(b.IndexName())
 	if err != nil {
 		return err
 	}
 
-	return index.Delete(c, docID)
+	return index.DeleteMulti(c, docIDs)
 }
 
 // Opts returns *SampleSearchOptions.
