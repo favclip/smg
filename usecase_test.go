@@ -3,6 +3,7 @@ package smg
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -312,31 +313,119 @@ func (b *InventorySearchBuilder) Put(c context.Context, src *Inventory) (string,
 	return b.PutDocument(c, doc)
 }
 
+func (b *InventorySearchBuilder) PutMulti(c context.Context, srcs []*Inventory) ([]string, error) {
+	docs := make([]*InventorySearch, 0, len(srcs))
+	for _, src := range srcs {
+		doc, err := src.Searchfy()
+		if err != nil {
+			return nil, err
+		}
+
+		docs = append(docs, doc)
+	}
+
+	return b.PutDocumentMulti(c, docs)
+}
+
 func (b *InventorySearchBuilder) PutDocument(c context.Context, src *InventorySearch) (string, error) {
+	docIDs, err := b.PutDocumentMulti(c, []*InventorySearch{src})
+	if err != nil {
+		return "", err
+	}
+
+	return docIDs[0], nil
+}
+
+func (b *InventorySearchBuilder) PutDocumentMulti(c context.Context, srcs []*InventorySearch) ([]string, error) {
 	index, err := search.Open(b.IndexName())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	docID := ""
-	if v, ok := interface{}(src).(smgutils.DocIDer); ok { // TODO can I shorten this cond expression?
-		docID, err = v.DocID(c)
-		if err != nil {
-			return "", err
+	docIDs := make([]string, 0, len(srcs))
+	putSrcs := make([]interface{}, 0, len(srcs))
+	for _, src := range srcs {
+		docID := ""
+		if v, ok := interface{}(src).(smgutils.DocIDer); ok {
+			docID, err = v.DocID(c)
+			if err != nil {
+				return nil, err
+			}
+			src.ID = docID
 		}
-		src.ID = docID
+
+		docIDs = append(docIDs, docID)
+		putSrcs = append(putSrcs, src)
+
+		log.Debugf(c, "id: %#v, payload: %#v", docID, src)
 	}
 
-	log.Debugf(c, "id: %#v, payload: %#v", docID, src)
-
-	docID, err = index.Put(c, docID, src)
+	docIDs, err = index.PutMulti(c, docIDs, putSrcs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	src.ID = docID
+	for idx, docID := range docIDs {
+		srcs[idx].ID = docID
+	}
 
-	return docID, nil
+	return docIDs, nil
+}
+
+func (b *InventorySearchBuilder) Delete(c context.Context, src *Inventory) error {
+	doc, err := src.Searchfy()
+	if err != nil {
+		return err
+	}
+	return b.DeleteDocument(c, doc)
+}
+
+func (b *InventorySearchBuilder) DeleteMulti(c context.Context, srcs []*Inventory) error {
+	docs := make([]*InventorySearch, 0, len(srcs))
+	for _, src := range srcs {
+		doc, err := src.Searchfy()
+		if err != nil {
+			return err
+		}
+
+		docs = append(docs, doc)
+	}
+	return b.DeleteDocumentMulti(c, docs)
+}
+
+func (b *InventorySearchBuilder) DeleteDocument(c context.Context, src *InventorySearch) error {
+	return b.DeleteDocumentMulti(c, []*InventorySearch{src})
+}
+
+func (b *InventorySearchBuilder) DeleteDocumentMulti(c context.Context, srcs []*InventorySearch) error {
+	docIDs := make([]string, 0, len(srcs))
+	for _, src := range srcs {
+		if v, ok := interface{}(src).(smgutils.DocIDer); ok {
+			docID, err := v.DocID(c)
+			if err != nil {
+				return err
+			}
+			docIDs = append(docIDs, docID)
+			continue
+		}
+
+		return errors.New("src is not implemented DocIDer interface")
+	}
+
+	return b.DeleteMultiByDocIDs(c, docIDs)
+}
+
+func (b *InventorySearchBuilder) DeleteByDocID(c context.Context, docID string) error {
+	return b.DeleteMultiByDocIDs(c, []string{docID})
+}
+
+func (b *InventorySearchBuilder) DeleteMultiByDocIDs(c context.Context, docIDs []string) error {
+	index, err := search.Open(b.IndexName())
+	if err != nil {
+		return err
+	}
+
+	return index.DeleteMulti(c, docIDs)
 }
 
 func (b *InventorySearchBuilder) Opts() *InventorySearchOptions {
