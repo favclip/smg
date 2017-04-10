@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/favclip/smg/smgutils"
 	"github.com/mjibson/goon"
 	"golang.org/x/net/context"
@@ -59,6 +61,7 @@ func TestUsecaseSample(t *testing.T) {
 	}
 	defer closer()
 
+	namedIndexName := "RiceCakes"
 	func() {
 		var inv *Inventory
 		index := NewInventorySearch()
@@ -91,6 +94,23 @@ func TestUsecaseSample(t *testing.T) {
 		}
 
 		_, err = index.Put(c, inv)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		inv = &Inventory{
+			ID:          333,
+			ProductName: "お餅",
+			Description: "一年中食べたい！",
+			Stock:       1095,
+			AdminNames:  []string{"Mr.C"},
+			Shops:       []*Shop{&Shop{Name: "YushimaTenmangu", Address: "Yushima"}},
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+
+		namedIndex := NewInventorySearchWithIndexName(namedIndexName)
+		_, err = namedIndex.Put(c, inv)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -151,6 +171,46 @@ func TestUsecaseSample(t *testing.T) {
 			}
 			t.Logf("%s %#v", docID, s)
 		}
+	}()
+
+	func() {
+		t.Logf("#3")
+
+		index := NewInventorySearch()
+		index.ProductName.Match("お餅")
+		iter, err := index.Search(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		docID, s, err := iter.Next(c)
+		if err == nil {
+			t.Fatal(fmt.Errorf("find RiceCake in other inventory"), docID, s)
+		} else if err != search.Done {
+			t.Fatal(err.Error())
+		}
+
+		namedIndex := NewInventorySearchWithIndexName(namedIndexName)
+		namedIndex.ProductName.Match("お餅")
+		nIter, err := namedIndex.Search(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cnt := 0
+		for {
+			docID, s, err := nIter.Next(c)
+			if err == search.Done {
+				break
+			}
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			t.Logf("%s %#v", docID, s)
+			cnt++
+		}
+		if cnt != 1 {
+			t.Fatal(fmt.Errorf("unexpected RiceCake cnt %d: expected 1", cnt), docID, s)
+		}
+		t.Log("#3 done!")
 	}()
 }
 
@@ -243,6 +303,12 @@ func NewInventorySearch() *InventorySearchBuilder {
 	return b
 }
 
+func NewInventorySearchWithIndexName(name string) *InventorySearchBuilder {
+	b := NewInventorySearch()
+	b.indexName = name
+	return b
+}
+
 var _ smgutils.SearchBuilder = &InventorySearchBuilder{}
 
 type InventorySearchBuilder struct {
@@ -250,6 +316,7 @@ type InventorySearchBuilder struct {
 	currentOp   *smgutils.Op // groupの扱い
 	opts        *search.SearchOptions
 	query       string
+	indexName   string
 	index       *search.Index
 	ProductName *InventorySearchStringPropertyInfo
 	Description *InventorySearchNgramStringPropertyInfo
@@ -260,6 +327,9 @@ type InventorySearchBuilder struct {
 }
 
 func (b *InventorySearchBuilder) IndexName() string {
+	if b.indexName != "" {
+		return b.indexName
+	}
 	return "Inventory"
 }
 

@@ -122,6 +122,14 @@ func NewInventorySearch() *InventorySearchBuilder {
 	return b
 }
 
+// NewInventorySearchWithIndexName create new *InventorySearchBuilder with specified Index name.
+// Should use with auto-fixed val like UserID, to avoid typo
+func NewInventorySearchWithIndexName(name string) *InventorySearchBuilder {
+	b := NewInventorySearch()
+	b.indexName = name
+	return b
+}
+
 var _ smgutils.SearchBuilder = &InventorySearchBuilder{}
 
 // InventorySearchBuilder builds Search API query.
@@ -130,6 +138,7 @@ type InventorySearchBuilder struct {
 	currentOp   *smgutils.Op // for grouping
 	opts        *search.SearchOptions
 	query       string
+	indexName   string
 	index       *search.Index
 	ProductName *InventorySearchStringPropertyInfo
 	Description *InventorySearchNgramStringPropertyInfo
@@ -144,6 +153,9 @@ type InventorySearchBuilder struct {
 
 // IndexName returns name of target index.
 func (b *InventorySearchBuilder) IndexName() string {
+	if b.indexName != "" {
+		return b.indexName
+	}
 	return "Inventory"
 }
 
