@@ -45,6 +45,14 @@ func NewSampleSearch() *SampleSearchBuilder {
 	return b
 }
 
+// NewSampleSearchWithIndexName create new *SampleSearchBuilder with specified Index name.
+// Should use with auto-fixed val like UserID, to avoid typo
+func NewSampleSearchWithIndexName(name string) *SampleSearchBuilder {
+	b := NewSampleSearch()
+	b.indexName = name
+	return b
+}
+
 var _ smgutils.SearchBuilder = &SampleSearchBuilder{}
 
 // SampleSearchBuilder builds Search API query.
@@ -53,12 +61,16 @@ type SampleSearchBuilder struct {
 	currentOp *smgutils.Op // for grouping
 	opts      *search.SearchOptions
 	query     string
+	indexName string
 	index     *search.Index
 	Foo       *SampleSearchStringPropertyInfo
 }
 
 // IndexName returns name of target index.
 func (b *SampleSearchBuilder) IndexName() string {
+	if b.indexName != "" {
+		return b.indexName
+	}
 	return "Sample"
 }
 

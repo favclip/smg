@@ -383,6 +383,17 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 			}
 		`)
 
+	// implement New*SearchWithIndexName method
+	g.Printf(`
+			// New%[1]sSearchWithIndexName create new *%[1]sSearchBuilder with specified Index name.
+			// Should use with auto-fixed val like UserID, to avoid typo
+			func New%[1]sSearchWithIndexName(name string) *%[1]sSearchBuilder {
+				b := New%[1]sSearch()
+				b.indexName = name
+				return b
+			}
+		`, st.Name())
+
 	// implement *SearchBuilder struct
 	g.Printf(`
 			var _ smgutils.SearchBuilder = &%[1]sSearchBuilder{}
@@ -393,6 +404,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 				currentOp   *smgutils.Op // for grouping
 				opts        *search.SearchOptions
 				query       string
+				indexName   string
 				index       *search.Index
 		`, st.Name())
 	for _, field := range st.Fields {
@@ -419,6 +431,9 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 	g.Printf(`
 			// IndexName returns name of target index.
 			func (b *%[1]sSearchBuilder) IndexName() string {
+				if b.indexName != "" {
+					return b.indexName
+				}
 				return "%[1]s"
 			}
 
