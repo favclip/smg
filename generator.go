@@ -56,7 +56,7 @@ func Parse(pkg *genbase.PackageInfo, typeInfos genbase.TypeInfos) (*BuildSource,
 		typeInfos: typeInfos,
 	}
 
-	bu.g.AddImport("golang.org/x/net/context", "")
+	bu.g.AddImport("context", "")
 	bu.g.AddImport("google.golang.org/appengine/search", "")
 	bu.g.AddImport("google.golang.org/appengine/log", "")
 	bu.g.AddImport("bytes", "")

@@ -2,13 +2,13 @@ package smgutils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"golang.org/x/net/context"
 	"google.golang.org/appengine/search"
 )
 

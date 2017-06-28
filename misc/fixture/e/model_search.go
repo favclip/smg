@@ -4,10 +4,10 @@ package e
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/favclip/smg/smgutils"
-	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/search"
 	"strconv"

@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"context"
 	"github.com/mjibson/goon"
-	"golang.org/x/net/context"
 	"google.golang.org/appengine/datastore"
 )
 

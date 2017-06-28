@@ -2,17 +2,16 @@ package smg
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
-	"fmt"
-
 	"github.com/favclip/smg/smgutils"
 	"github.com/mjibson/goon"
-	"golang.org/x/net/context"
 	"google.golang.org/appengine/aetest"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
